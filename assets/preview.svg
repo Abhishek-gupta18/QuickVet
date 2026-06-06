@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0%" stop-color="#FFF8F0"/>
+      <stop offset="100%" stop-color="#FEF6E9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="600" fill="url(#g)" rx="16"/>
+  <rect x="40" y="28" width="220" height="44" rx="8" fill="#fff"/>
+  <text x="60" y="58" font-family="Arial" font-size="20" fill="#FF914D" font-weight="700">🐾 QuickVet</text>
+  <rect x="40" y="96" width="540" height="340" rx="16" fill="#fff"/>
+  <text x="64" y="136" font-family="Inter, Arial" font-size="36" fill="#1F2937" font-weight="800">Find Trusted <tspan fill="#FF914D">Veterinary Care</tspan> Near You</text>
+  <rect x="64" y="180" width="220" height="56" rx="12" fill="#FF914D"/>
+  <text x="140" y="216" font-family="Inter, Arial" font-size="16" fill="#fff" font-weight="700">Find Nearby Vets</text>
+  <rect x="300" y="180" width="220" height="56" rx="12" fill="#EF4444"/>
+  <text x="390" y="216" font-family="Inter, Arial" font-size="16" fill="#fff" font-weight="700">Emergency Help</text>
+  <g transform="translate(620,96)">
+    <rect width="520" height="340" rx="16" fill="#E6FFF4"/>
+    <text x="32" y="40" font-family="Inter, Arial" font-size="14" fill="#374151">Map preview (interactive)</text>
+    <circle cx="360" cy="160" r="8" fill="#FF914D"/>
+  </g>
+  <rect x="40" y="460" width="1120" height="100" rx="12" fill="#fff"/>
+  <text x="64" y="500" font-family="Inter, Arial" font-size="14" fill="#6B7280">Verified Clinics • Pets Assisted • User Rating</text>
+</svg>
