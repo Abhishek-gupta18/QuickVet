@@ -1,0 +1,6 @@
+{
+  "name": "QuickVet",
+  "description": "Locate nearby veterinarians, request veterinary emergency assistance, book home visits, and keep your pets healthy in India.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
