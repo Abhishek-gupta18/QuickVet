@@ -10,6 +10,33 @@ const PORT = 3000;
 
 app.use(express.json());
 
+function normalizeEmail(email: unknown): string {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+function parseOptionalNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function sortNewestFirst<T extends { createdAt?: string; date?: string }>(items: T[]): T[] {
+  return [...items].sort((left, right) => {
+    const leftTime = new Date(left.createdAt || left.date || 0).getTime();
+    const rightTime = new Date(right.createdAt || right.date || 0).getTime();
+    return rightTime - leftTime;
+  });
+}
+
 // Persistent database file setup inside the container
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'db.json');
@@ -172,7 +199,13 @@ app.post('/api/auth/signup', (req, res) => {
     return;
   }
 
-  const existing = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (role === 'veterinarian' && !clinicId) {
+    res.status(400).json({ error: 'Clinic ID is required for veterinarian signups.' });
+    return;
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const existing = db.users.find(u => normalizeEmail(u.email) === normalizedEmail);
   if (existing) {
     res.status(400).json({ error: 'Email already registered. Please login.' });
     return;
@@ -193,7 +226,7 @@ app.post('/api/auth/signup', (req, res) => {
   };
 
   db.users.push(newUser);
-  db.userPrivateData[email.toLowerCase()] = { passwordHash: password };
+  db.userPrivateData[normalizedEmail] = { passwordHash: password };
   saveDB();
 
   // Create JWT-style simulated token return
@@ -208,8 +241,9 @@ app.post('/api/auth/login', (req, res) => {
     return;
   }
 
-  const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  const privateData = db.userPrivateData[email.toLowerCase()];
+  const normalizedEmail = normalizeEmail(email);
+  const user = db.users.find(u => normalizeEmail(u.email) === normalizedEmail);
+  const privateData = db.userPrivateData[normalizedEmail];
 
   if (!user || !privateData || privateData.passwordHash !== password) {
     res.status(401).json({ error: 'Invalid email or password.' });
@@ -227,13 +261,14 @@ app.post('/api/auth/reset-password', (req, res) => {
     return;
   }
 
-  const privateData = db.userPrivateData[email.toLowerCase()];
+  const normalizedEmail = normalizeEmail(email);
+  const privateData = db.userPrivateData[normalizedEmail];
   if (!privateData) {
     res.status(404).json({ error: 'User does not exist with that email address.' });
     return;
   }
 
-  db.userPrivateData[email.toLowerCase()].passwordHash = newPassword;
+  db.userPrivateData[normalizedEmail].passwordHash = newPassword;
   saveDB();
   res.json({ message: 'Password updated successfully.' });
 });
@@ -259,8 +294,8 @@ app.post('/api/clinics', (req, res) => {
     address,
     area,
     city: city || 'Bengaluru',
-    latitude: latitude ? parseFloat(latitude) : 12.9716,
-    longitude: longitude ? parseFloat(longitude) : 77.5946,
+    latitude: parseOptionalNumber(latitude, 12.9716),
+    longitude: parseOptionalNumber(longitude, 77.5946),
     phone,
     rating: 5.0, // Initial perfect rating
     reviewsCount: 1,
@@ -326,13 +361,14 @@ app.get('/api/bookings', (req, res) => {
   let filtered = db.bookings;
 
   if (email) {
-    filtered = filtered.filter(b => b.petOwnerEmail.toLowerCase() === (email as string).toLowerCase());
+    const normalizedEmail = normalizeEmail(email);
+    filtered = filtered.filter(b => normalizeEmail(b.petOwnerEmail) === normalizedEmail);
   }
   if (clinicId) {
     filtered = filtered.filter(b => b.clinicId === clinicId);
   }
 
-  res.json(filtered);
+  res.json(sortNewestFirst(filtered));
 });
 
 app.post('/api/bookings', (req, res) => {
@@ -348,7 +384,7 @@ app.post('/api/bookings', (req, res) => {
     clinicId,
     clinicName: clinicName || 'Veterinary Clinic',
     petOwnerName: petOwnerName || 'Pet Parent',
-    petOwnerEmail: petOwnerEmail.toLowerCase(),
+    petOwnerEmail: normalizeEmail(petOwnerEmail),
     petName,
     petType: petType || 'Dog',
     service: service || 'General Consultation',
@@ -382,7 +418,7 @@ app.post('/api/bookings/:id/status', (req, res) => {
 
 // EMERGENCY ASSISTANCE ENDPOINTS
 app.get('/api/emergency', (req, res) => {
-  res.json(db.emergencies);
+  res.json(sortNewestFirst(db.emergencies));
 });
 
 app.post('/api/emergency', (req, res) => {
@@ -402,11 +438,11 @@ app.post('/api/emergency', (req, res) => {
     phone,
     address,
     description,
-    latitude: latitude ? parseFloat(latitude) : 12.9716,
-    longitude: longitude ? parseFloat(longitude) : 77.5946,
+    latitude: parseOptionalNumber(latitude, 12.9716),
+    longitude: parseOptionalNumber(longitude, 77.5946),
     status: 'pending',
     date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }),
     createdAt: new Date().toISOString()
   };
 
@@ -441,7 +477,8 @@ app.post('/api/user/favorites', (req, res) => {
     return;
   }
 
-  const uIndex = db.users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+  const normalizedEmail = normalizeEmail(email);
+  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === normalizedEmail);
   if (uIndex === -1) {
     res.status(404).json({ error: 'User profile not found.' });
     return;
@@ -451,10 +488,8 @@ app.post('/api/user/favorites', (req, res) => {
   const exists = favorites.includes(clinicId);
 
   if (exists) {
-    // Remove it
     db.users[uIndex].favoriteClinics = favorites.filter(id => id !== clinicId);
   } else {
-    // Add it
     db.users[uIndex].favoriteClinics = [...favorites, clinicId];
   }
 
@@ -469,7 +504,8 @@ app.post('/api/user/pets', (req, res) => {
     return;
   }
 
-  const uIndex = db.users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+  const normalizedEmail = normalizeEmail(email);
+  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === normalizedEmail);
   if (uIndex === -1) {
     res.status(404).json({ error: 'User account not found.' });
     return;
