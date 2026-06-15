@@ -16,7 +16,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               onClick={() => onNavigate('home')}
               className="flex items-center gap-2 text-white font-display font-black text-xl cursor-pointer"
             >
-              <div className="bg-[#FF914D] p-1.5 rounded-xl text-white">
+              <div className="bg-[#58B368] p-1.5 rounded-xl text-white">
                 <PawPrint className="w-5 h-5 fill-white text-white" />
               </div>
               <span>QuickVet</span>
@@ -27,13 +27,13 @@ export default function Footer({ onNavigate }: FooterProps) {
             
             {/* Social handles */}
             <div className="flex items-center space-x-3.5 pt-2">
-              <a href="#" className="p-2 bg-slate-800 hover:bg-[#FF914D] text-slate-300 hover:text-white rounded-xl transition-all">
+              <a href="#" className="p-2 bg-slate-800 hover:bg-[#58B368] text-slate-300 hover:text-white rounded-xl transition-all">
                 <Facebook className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 bg-slate-800 hover:bg-[#FF914D] text-slate-300 hover:text-white rounded-xl transition-all">
+              <a href="#" className="p-2 bg-slate-800 hover:bg-[#58B368] text-slate-300 hover:text-white rounded-xl transition-all">
                 <Twitter className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 bg-slate-800 hover:bg-[#FF914D] text-slate-300 hover:text-white rounded-xl transition-all">
+              <a href="#" className="p-2 bg-slate-800 hover:bg-[#58B368] text-slate-300 hover:text-white rounded-xl transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
             </div>
@@ -41,17 +41,17 @@ export default function Footer({ onNavigate }: FooterProps) {
 
           {/* Core App routes links */}
           <div className="text-left space-y-3.5">
-            <h4 className="font-display font-bold text-white text-xs uppercase tracking-widest text-[#FF914D]">App Features</h4>
+            <h4 className="font-display font-bold text-white text-xs uppercase tracking-widest text-[#58B368]">App Features</h4>
             <div className="flex flex-col gap-2.5 text-xs text-slate-400">
-              <button onClick={() => onNavigate('find_vets')} className="hover:text-[#FF914D] text-left transition-colors flex items-center gap-1">
+              <button onClick={() => onNavigate('find_vets')} className="hover:text-[#58B368] text-left transition-colors flex items-center gap-1">
                 <ChevronRight className="w-3 h-3 text-slate-600" />
                 <span>Search Veterinary Clinics</span>
               </button>
-              <button onClick={() => onNavigate('emergency')} className="hover:text-[#FF914D] text-left transition-colors flex items-center gap-1">
-                <ChevronRight className="w-3 h-3 text-red-500 animate-pulse" />
+              <button onClick={() => onNavigate('emergency')} className="hover:text-[#58B368] text-left transition-colors flex items-center gap-1">
+                <ChevronRight className="w-3 h-3 text-emerald-500 animate-pulse" />
                 <span>Request Red Emergency Alert</span>
               </button>
-              <button onClick={() => onNavigate('reviews')} className="hover:text-[#FF914D] text-left transition-colors flex items-center gap-1">
+              <button onClick={() => onNavigate('reviews')} className="hover:text-[#58B368] text-left transition-colors flex items-center gap-1">
                 <ChevronRight className="w-3 h-3 text-slate-600" />
                 <span>Patient Reviews</span>
               </button>
@@ -79,7 +79,7 @@ export default function Footer({ onNavigate }: FooterProps) {
 
           {/* Veterinarians registration column */}
           <div className="text-left space-y-3.5 bg-slate-800/40 p-4.5 rounded-2xl border border-slate-800">
-            <h4 className="font-display font-bold text-white text-xs uppercase tracking-widest text-[#FFD54F]">For Veterinary Experts</h4>
+            <h4 className="font-display font-bold text-white text-xs uppercase tracking-widest text-[#BFE7C4]">For Veterinary Experts</h4>
             <p className="text-[11px] text-slate-400 leading-normal">
               Are you operating a registered, licensed veterinary clinical station in India? Plunge into our live network today.
             </p>
@@ -101,7 +101,7 @@ export default function Footer({ onNavigate }: FooterProps) {
             <span>•</span>
             <a href="#" className="hover:underline">Acceptable Use Guideline</a>
             <span>•</span>
-            <span className="text-[#FF914D] font-bold">🎯 Swadeshi Code</span>
+            <span className="text-[#58B368] font-bold">🎯 Swadeshi Code</span>
           </div>
         </div>
 
@@ -109,3 +109,4 @@ export default function Footer({ onNavigate }: FooterProps) {
     </footer>
   );
 }
+

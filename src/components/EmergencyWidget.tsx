@@ -56,7 +56,7 @@ export default function EmergencyWidget({
         particleCount: 80,
         spread: 60,
         origin: { y: 0.8 },
-        colors: ['#EF4444', '#FF914D', '#FFD54F']
+        colors: ['#2F855A', '#58B368', '#BFE7C4']
       });
     }, 9000));
 
@@ -127,13 +127,13 @@ export default function EmergencyWidget({
   };
 
   return (
-    <section id="emergency-assistance" className="py-16 bg-gradient-to-b from-white to-[#FFF8F0]">
+    <section id="emergency-assistance" className="py-16 bg-gradient-to-b from-white to-[#F4FBF3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
         
         {/* Section title header */}
         <div className="max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-bold uppercase tracking-wider select-none animate-pulse">
-            <ShieldAlert className="w-4.5 h-4.5 fill-red-600 text-white" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-600 text-xs font-bold uppercase tracking-wider select-none animate-pulse">
+            <ShieldAlert className="w-4.5 h-4.5 fill-emerald-600 text-white" />
             <span>Red Alert Hotline</span>
           </div>
           <h2 className="font-display font-black text-3xl sm:text-4xl text-gray-900 tracking-tight">
@@ -146,12 +146,12 @@ export default function EmergencyWidget({
 
         {/* Live Active Emergency Tracking Panel */}
         {activeEmergency ? (
-          <div className="max-w-4xl mx-auto bg-white border-2 border-red-200 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-left space-y-6">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 animate-pulse" />
+          <div className="max-w-4xl mx-auto bg-white border-2 border-emerald-200 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-left space-y-6">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 via-green-400 to-lime-300 animate-pulse" />
             
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-rose-50 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-50 pb-4">
               <div>
-                <span className="text-[10px] uppercase font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-md tracking-wider">
+                <span className="text-[10px] uppercase font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md tracking-wider">
                   Signal Broadcasted Live
                 </span>
                 <h4 className="font-display font-bold text-xl text-gray-900 mt-1">
@@ -172,11 +172,11 @@ export default function EmergencyWidget({
               
               {/* Step 1 */}
               <div className={`p-4 rounded-2xl border transition-all ${
-                activeStep >= 1 ? 'bg-red-50 border-red-200 text-red-700 font-bold' : 'bg-slate-50 border-slate-100 text-gray-400'
+                activeStep >= 1 ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-bold' : 'bg-slate-50 border-slate-100 text-gray-400'
               }`}>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    activeStep >= 1 ? 'bg-red-500 text-white' : 'bg-slate-200 text-gray-500'
+                    activeStep >= 1 ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-gray-500'
                   }`}>
                     {activeStep > 1 ? '✓' : '1'}
                   </span>
@@ -189,11 +189,11 @@ export default function EmergencyWidget({
 
               {/* Step 2 */}
               <div className={`p-4 rounded-2xl border transition-all ${
-                activeStep >= 2 ? 'bg-orange-50 border-orange-200 text-orange-700 font-bold' : 'bg-slate-50 border-slate-100 text-gray-400 font-normal'
+                activeStep >= 2 ? 'bg-green-50 border-green-200 text-green-700 font-bold' : 'bg-slate-50 border-slate-100 text-gray-400 font-normal'
               }`}>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    activeStep >= 2 ? 'bg-orange-500 text-white animate-pulse' : 'bg-slate-200 text-gray-500'
+                    activeStep >= 2 ? 'bg-green-500 text-white animate-pulse' : 'bg-slate-200 text-gray-500'
                   }`}>
                     {activeStep > 2 ? '✓' : '2'}
                   </span>
@@ -243,9 +243,9 @@ export default function EmergencyWidget({
             </div>
 
             {/* Sim of callbacks */}
-            <div className="bg-red-50/50 rounded-2xl p-4 border border-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-red-800">
+            <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-800">
               <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-red-500 animate-spin" />
+                <Activity className="w-5 h-5 text-emerald-500 animate-spin" />
                 <p className="leading-tight">
                   {activeStep === 1 && '🚨 Analyzing critical symptoms. Finding regional veterinaries...'}
                   {activeStep === 2 && '🚨 Sirens active! 4 clinics actively looking at Coco\'s file...'}
@@ -254,7 +254,7 @@ export default function EmergencyWidget({
                 </p>
               </div>
               
-              <div className="bg-white px-3 py-1.5 rounded-lg border border-red-100/60 shadow-sm font-bold self-start sm:self-center">
+              <div className="bg-white px-3 py-1.5 rounded-lg border border-emerald-100/60 shadow-sm font-bold self-start sm:self-center">
                 Contact: {activeEmergency.phone}
               </div>
             </div>
@@ -266,11 +266,11 @@ export default function EmergencyWidget({
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 max-w-5xl mx-auto relative">
               
               {/* Connecting lines for large screens */}
-              <div className="hidden sm:block absolute top-12 left-[12%] right-[12%] h-0.5 bg-gradient-to-r from-red-200 via-orange-200 to-green-100 z-0" />
+              <div className="hidden sm:block absolute top-12 left-[12%] right-[12%] h-0.5 bg-gradient-to-r from-emerald-200 via-green-200 to-green-100 z-0" />
 
               {/* Step 1 */}
               <div className="relative z-10 space-y-3 p-4">
-                <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold shadow-md shadow-red-50 border-2 border-white">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-xl font-bold shadow-md shadow-emerald-50 border-2 border-white">
                   01
                 </div>
                 <h4 className="font-display font-bold text-gray-800 text-sm">Describe Emergency</h4>
@@ -281,7 +281,7 @@ export default function EmergencyWidget({
 
               {/* Step 2 */}
               <div className="relative z-10 space-y-3 p-4">
-                <div className="w-16 h-16 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto text-xl font-bold shadow-md shadow-orange-50 border-2 border-white">
+                <div className="w-16 h-16 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center mx-auto text-xl font-bold shadow-md shadow-green-50 border-2 border-white">
                   02
                 </div>
                 <h4 className="font-display font-bold text-gray-800 text-sm">Vets Notified</h4>
@@ -292,7 +292,7 @@ export default function EmergencyWidget({
 
               {/* Step 3 */}
               <div className="relative z-10 space-y-3 p-4">
-                <div className="w-16 h-16 rounded-2xl bg-yellow-105 bg-[#FFD54F]/25 text-amber-700 flex items-center justify-center mx-auto text-xl font-bold shadow-md shadow-amber-50 border-2 border-white">
+                <div className="w-16 h-16 rounded-2xl bg-[#BFE7C4]/25 text-lime-700 flex items-center justify-center mx-auto text-xl font-bold shadow-md shadow-lime-50 border-2 border-white">
                   03
                 </div>
                 <h4 className="font-display font-bold text-gray-800 text-sm">Vet Accepts</h4>
@@ -316,10 +316,10 @@ export default function EmergencyWidget({
 
             {/* Huge Red Pulsing Button CTA */}
             <div className="relative inline-block group">
-              <div className="absolute -inset-1 rounded-3xl bg-red-600 blur opacity-40 group-hover:opacity-75 transition duration-300 animate-pulse" />
+              <div className="absolute -inset-1 rounded-3xl bg-emerald-600 blur opacity-40 group-hover:opacity-75 transition duration-300 animate-pulse" />
               <button
                 onClick={() => setShowWizard(true)}
-                className="relative px-8 sm:px-12 py-5 sm:py-6 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-extrabold text-base sm:text-xl rounded-2xl sm:rounded-3xl shadow-xl transition-all flex items-center gap-3 cursor-pointer select-none"
+                className="relative px-8 sm:px-12 py-5 sm:py-6 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-base sm:text-xl rounded-2xl sm:rounded-3xl shadow-xl transition-all flex items-center gap-3 cursor-pointer select-none"
               >
                 <Phone className="w-6 h-6 fill-white text-white animate-bounce" />
                 <span>Request Emergency Assistance</span>
@@ -335,11 +335,11 @@ export default function EmergencyWidget({
         {/* Wizard Panel form popup modal */}
         {showWizard && (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border-2 border-red-100 flex flex-col text-left">
+            <div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border-2 border-emerald-100 flex flex-col text-left">
               
-              <div className="bg-red-500 text-white p-5 pr-6 flex items-center justify-between">
+              <div className="bg-emerald-500 text-white p-5 pr-6 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5.5 h-5.5 fill-white text-red-500 animate-bounce" />
+                  <AlertTriangle className="w-5.5 h-5.5 fill-white text-emerald-500 animate-bounce" />
                   <div>
                     <h3 className="font-display font-black text-lg">Send Emergency Alert Signal</h3>
                     <p className="text-[10px] text-white/80 uppercase tracking-widest font-bold">24x7 Trauma Dispatch</p>
@@ -354,7 +354,7 @@ export default function EmergencyWidget({
               </div>
 
               <form onSubmit={handleTriggerEmergency} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
-                <p className="text-xs text-gray-500 leading-normal bg-red-50/50 p-3 rounded-xl border border-red-100/50">
+                <p className="text-xs text-gray-500 leading-normal bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
                   Fill this out as quickly and accurately as possible. Nearby veterinary clinics are notified immediately with your phone contacts and location.
                 </p>
 
@@ -367,7 +367,7 @@ export default function EmergencyWidget({
                       placeholder="e.g. Bruno / Cat"
                       value={petName}
                       onChange={(e) => setPetName(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-red-400"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-400"
                     />
                   </div>
 
@@ -376,7 +376,7 @@ export default function EmergencyWidget({
                     <select
                       value={petType}
                       onChange={(e) => setPetType(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-red-400 h-[38px]"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-400 h-[38px]"
                     >
                       <option value="Dog">🐶 Dog</option>
                       <option value="Cat">🐱 Cat</option>
@@ -397,7 +397,7 @@ export default function EmergencyWidget({
                       placeholder="e.g. +91 98765 43210 (Needed for callbacks)"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-red-400"
+                      className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-400"
                     />
                     <Phone className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                   </div>
@@ -412,7 +412,7 @@ export default function EmergencyWidget({
                       placeholder="e.g. Indiranagar Double Road, Opp Cafe Coffee Day"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-red-400"
+                      className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-400"
                     />
                     <MapPin className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                   </div>
@@ -429,7 +429,7 @@ export default function EmergencyWidget({
                         onClick={() => setDescription(haz)}
                         className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold text-left transition-all ${
                           description === haz
-                            ? 'bg-red-50 text-red-700 border-red-300'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                             : 'bg-stone-50 border-stone-200 text-stone-500 hover:bg-stone-100'
                         }`}
                       >
@@ -448,7 +448,7 @@ export default function EmergencyWidget({
                     placeholder="Describe what happened, any bleeding, difficulty breathing, or symptoms..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-red-400 leading-normal"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-400 leading-normal"
                   />
                 </div>
 
@@ -456,7 +456,7 @@ export default function EmergencyWidget({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-red-100 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Activity className="w-4 h-4 animate-spin-slow text-white" />
                   <span>{submitting ? 'Broadcasting Alert Signal...' : 'Broadcast Urgent Red Alert'}</span>
@@ -470,3 +470,4 @@ export default function EmergencyWidget({
     </section>
   );
 }
+

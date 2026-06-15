@@ -87,9 +87,9 @@ export default function AuthModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-orange-50 flex flex-col">
+      <div className="relative bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-green-50 flex flex-col">
         {/* Title panel */}
-        <div className="bg-gradient-to-r from-[#FF914D] to-[#FFD54F] px-6 py-5 text-white relative">
+        <div className="bg-gradient-to-r from-[#58B368] to-[#BFE7C4] px-6 py-5 text-white relative">
           <h3 className="font-display font-black text-xl">
             {isForgotPassword 
               ? 'Reset Account Password' 
@@ -110,7 +110,7 @@ export default function AuthModal({
 
         {/* Error message slot */}
         {errorMsg && (
-          <div className="mx-6 mt-4 p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl flex items-center gap-2">
+          <div className="mx-6 mt-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-2xl flex items-center gap-2">
             <span>⚠️ {errorMsg}</span>
           </div>
         )}
@@ -131,7 +131,7 @@ export default function AuthModal({
                 setResetFinished(false);
                 onToggleType('login');
               }}
-              className="w-full py-3 bg-[#FF914D] text-white font-extrabold rounded-xl text-sm capitalize"
+              className="w-full py-3 bg-[#58B368] text-white font-extrabold rounded-xl text-sm capitalize"
             >
               Sign In Now Offer
             </button>
@@ -148,7 +148,7 @@ export default function AuthModal({
                   placeholder="name@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-400"
+                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-400"
                 />
                 <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               </div>
@@ -164,7 +164,7 @@ export default function AuthModal({
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-400"
+                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-400"
                 />
                 <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               </div>
@@ -173,7 +173,7 @@ export default function AuthModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#FF914D] text-white font-black rounded-xl text-sm scale-transition hover:bg-orange-600 disabled:opacity-50"
+              className="w-full py-3.5 bg-[#58B368] text-white font-black rounded-xl text-sm scale-transition hover:bg-green-600 disabled:opacity-50"
             >
               {loading ? 'Updating Credentials...' : 'Save Updated Password'}
             </button>
@@ -199,7 +199,7 @@ export default function AuthModal({
                     onClick={() => setRole('pet_owner')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
                       role === 'pet_owner'
-                        ? 'bg-[#FF914D] text-white shadow-md'
+                        ? 'bg-[#58B368] text-white shadow-md'
                         : 'text-gray-500 hover:text-gray-800'
                     }`}
                   >
@@ -210,7 +210,7 @@ export default function AuthModal({
                     onClick={() => setRole('veterinarian')}
                     className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
                       role === 'veterinarian'
-                        ? 'bg-[#FF914D] text-white shadow-md'
+                        ? 'bg-[#58B368] text-white shadow-md'
                         : 'text-gray-500 hover:text-gray-800'
                     }`}
                   >
@@ -231,7 +231,7 @@ export default function AuthModal({
                     placeholder="e.g. Prabal Beas"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-400"
+                    className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-400"
                   />
                   <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 </div>
@@ -248,7 +248,7 @@ export default function AuthModal({
                   placeholder="e.g. prabal.beas2@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-400"
+                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-400"
                 />
                 <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               </div>
@@ -265,7 +265,7 @@ export default function AuthModal({
                     placeholder="e.g. +91 98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-400"
+                    className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-400"
                   />
                   <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 </div>
@@ -279,7 +279,7 @@ export default function AuthModal({
                 <select
                   value={clinicId}
                   onChange={(e) => setClinicId(e.target.value)}
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-orange-400"
+                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-green-400"
                 >
                   <option value="clinic-1">Cessna Lifeline 24x7 Animal Hospital (Koramangala)</option>
                   <option value="clinic-2">Crown Vet Premium Clinic (Indiranagar)</option>
@@ -297,7 +297,7 @@ export default function AuthModal({
                   <button
                     type="button"
                     onClick={() => setIsForgotPassword(true)}
-                    className="text-xs text-[#FF914D] font-semibold hover:underline"
+                    className="text-xs text-[#58B368] font-semibold hover:underline"
                   >
                     Forgot Password?
                   </button>
@@ -310,7 +310,7 @@ export default function AuthModal({
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-400"
+                  className="w-full p-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-400"
                 />
                 <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
               </div>
@@ -320,7 +320,7 @@ export default function AuthModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4.5 bg-[#FF914D] hover:bg-orange-600 active:scale-95 text-white font-extrabold rounded-2xl text-sm shadow-md shadow-orange-100 transition-all text-center cursor-pointer mt-4"
+              className="w-full py-4.5 bg-[#58B368] hover:bg-green-600 active:scale-95 text-white font-extrabold rounded-2xl text-sm shadow-md shadow-green-100 transition-all text-center cursor-pointer mt-4"
             >
               {loading 
                 ? 'Processing verification...' 
@@ -335,7 +335,7 @@ export default function AuthModal({
               <button
                 type="button"
                 onClick={() => onToggleType(type === 'login' ? 'signup' : 'login')}
-                className="text-xs text-[#FF914D] font-bold hover:underline"
+                className="text-xs text-[#58B368] font-bold hover:underline"
               >
                 {type === 'login' ? 'Register Now' : 'Sign In Now'}
               </button>
@@ -346,3 +346,4 @@ export default function AuthModal({
     </div>
   );
 }
+

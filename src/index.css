@@ -4,20 +4,20 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
   
-  --color-primary: #FF914D;
-  --color-secondary: #4CAF50;
-  --color-accent: #FFD54F;
-  --color-bg: #FFF8F0;
+  --color-primary: #58B368;
+  --color-secondary: #2F855A;
+  --color-accent: #BFE7C4;
+  --color-bg: #F4FBF3;
   --color-text: #2D3748;
   
-  --shadow-custom: 0 10px 30px -10px rgba(255, 145, 77, 0.1);
-  --shadow-success: 0 10px 30px -10px rgba(76, 175, 80, 0.1);
+  --shadow-custom: 0 10px 30px -10px rgba(88, 179, 104, 0.14);
+  --shadow-success: 0 10px 30px -10px rgba(47, 133, 90, 0.12);
 }
 
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
-    background-color: #FFF8F0;
+    background-color: #F4FBF3;
     color: #2D3748;
     overflow-x: hidden;
   }
@@ -34,7 +34,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #FFF8F0;
+  background: #F4FBF3;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -43,7 +43,7 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF914D;
+  background: #58B368;
 }
 
 /* Leaflet map general fixes */

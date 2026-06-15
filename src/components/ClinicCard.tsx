@@ -25,8 +25,8 @@ export default function ClinicCard(props: any) {
       onClick={() => onSelect(clinic.id)}
       className={`group relative flex flex-col md:flex-row gap-5 p-5 rounded-3xl bg-white border cursor-pointer hover:shadow-xl transition-all duration-300 md:items-center ${
         isSelected
-          ? 'border-[#FF914D] ring-2 ring-[#FF914D]/20 shadow-[#FF914D]/5'
-          : 'border-orange-50/50 hover:border-[#FF914D]/40 shadow-sm'
+          ? 'border-[#58B368] ring-2 ring-[#58B368]/20 shadow-[#58B368]/5'
+          : 'border-green-50/50 hover:border-[#58B368]/40 shadow-sm'
       }`}
     >
       {/* Clinic Poster Image */}
@@ -40,7 +40,7 @@ export default function ClinicCard(props: any) {
         {/* Badges on overlay image */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
           {clinic.hasEmergency && (
-            <span className="bg-red-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-lg uppercase tracking-wide flex items-center gap-0.5 shadow-md">
+            <span className="bg-emerald-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-lg uppercase tracking-wide flex items-center gap-0.5 shadow-md">
               <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
               Emergency 24x7
             </span>
@@ -60,24 +60,24 @@ export default function ClinicCard(props: any) {
           }}
           className={`absolute top-2.5 right-2 text-slate-800 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center border hover:scale-110 active:scale-95 transition-all shadow-sm ${
             isFavorite 
-              ? 'text-red-500 border-red-100 bg-red-50' 
-              : 'text-gray-400 border-gray-100 hover:text-red-500'
+              ? 'text-emerald-500 border-emerald-100 bg-emerald-50' 
+              : 'text-gray-400 border-gray-100 hover:text-emerald-500'
           }`}
           title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
-          <Heart className={`w-4.5 h-4.5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
+          <Heart className={`w-4.5 h-4.5 ${isFavorite ? 'fill-emerald-500 text-emerald-500' : ''}`} />
         </button>
       </div>
 
       {/* Details Container */}
       <div className="flex-grow space-y-2 text-left">
         <div className="flex flex-wrap items-center justify-between gap-1">
-          <h3 className="font-display font-bold text-lg md:text-xl text-gray-900 group-hover:text-[#FF914D] transition-colors leading-tight line-clamp-1">
+          <h3 className="font-display font-bold text-lg md:text-xl text-gray-900 group-hover:text-[#58B368] transition-colors leading-tight line-clamp-1">
             {clinic.name}
           </h3>
           
-          <div className="flex items-center gap-1.5 bg-yellow-50 border border-yellow-100/50 py-0.5 px-2 rounded-lg">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+          <div className="flex items-center gap-1.5 bg-lime-50 border border-lime-100/50 py-0.5 px-2 rounded-lg">
+            <Star className="w-4 h-4 fill-lime-400 text-lime-400" />
             <span className="text-xs font-black text-gray-800">{clinic.rating}</span>
             <span className="text-[10px] text-gray-400">({clinic.reviewsCount})</span>
           </div>
@@ -90,19 +90,19 @@ export default function ClinicCard(props: any) {
         {/* Location Specs Row */}
         <div className="flex flex-wrap items-center gap-y-1.5 gap-x-3.5 text-xs text-gray-500">
           <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-orange-400" />
+            <MapPin className="w-3.5 h-3.5 text-green-400" />
             <span className="font-semibold text-gray-700">{clinic.area}, {clinic.city}</span>
           </span>
 
           {distance !== null && (
-            <span className="bg-[#FF914D]/10 text-[#FF914D] font-bold px-1.5 py-0.5 rounded-md text-[11px] select-none">
+            <span className="bg-[#58B368]/10 text-[#58B368] font-bold px-1.5 py-0.5 rounded-md text-[11px] select-none">
               📍 {distance} km away
             </span>
           )}
 
           <span className="text-slate-300">|</span>
           
-          <span className={`font-semibold ${clinic.isOpenNow ? 'text-green-600' : 'text-red-500'}`}>
+          <span className={`font-semibold ${clinic.isOpenNow ? 'text-green-600' : 'text-emerald-500'}`}>
             {clinic.isOpenNow ? '● Open Now' : '● Closed'} ({clinic.workingHours})
           </span>
         </div>
@@ -121,7 +121,7 @@ export default function ClinicCard(props: any) {
           {clinic.services.slice(0, 3).map((serv) => (
             <span
               key={serv}
-              className="px-2 py-0.5 rounded-lg bg-orange-50/50 border border-orange-100/30 text-[10px] font-semibold text-gray-500"
+              className="px-2 py-0.5 rounded-lg bg-green-50/50 border border-green-100/30 text-[10px] font-semibold text-gray-500"
             >
               {serv}
             </span>
@@ -135,7 +135,7 @@ export default function ClinicCard(props: any) {
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onBook(clinic)}
-            className="flex items-center gap-1 px-3.5 py-2 bg-[#FF914D] hover:bg-orange-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-100 transition-all cursor-pointer"
+            className="flex items-center gap-1 px-3.5 py-2 bg-[#58B368] hover:bg-green-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-green-100 transition-all cursor-pointer"
           >
             <CalendarPlus className="w-3.5 h-3.5" />
             <span>Book Visit</span>
@@ -174,3 +174,4 @@ export default function ClinicCard(props: any) {
     </div>
   );
 }
+

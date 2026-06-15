@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PawPrint, Phone, Menu, X, LogIn, User, ClipboardList, AlertTriangle, LogOut } from 'lucide-react';
 import { User as UserType } from '../types';
+import { AnimatePresence, motion } from 'motion/react';
 
 interface NavbarProps {
   currentUser: UserType | null;
@@ -42,7 +43,7 @@ export default function Navbar({
               className="flex items-center gap-2 text-2xl font-extrabold text-[#2D3748] tracking-tight group hover:opacity-90 transition-all cursor-pointer"
             >
               <span className="font-display font-black text-2xl text-[#2D3748] flex items-center gap-1.5">
-                <span className="text-[#FF914D]">🐾</span> Quick<span className="text-[#FF914D]">Vet</span>
+                <span className="text-[#58B368]">🐾</span> Quick<span className="text-[#58B368]">Vet</span>
               </span>
             </button>
           </div>
@@ -55,8 +56,8 @@ export default function Navbar({
                 onClick={() => handleNavClick(link.id)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
                   activeTab === link.id
-                    ? 'bg-orange-50 text-[#FF914D] shadow-inner-sm'
-                    : 'text-gray-600 hover:text-[#FF914D] hover:bg-orange-50/40'
+                    ? 'bg-green-50 text-[#58B368] shadow-inner-sm'
+                    : 'text-gray-600 hover:text-[#58B368] hover:bg-green-50/40'
                 }`}
               >
                 {link.label}
@@ -69,7 +70,7 @@ export default function Navbar({
             {currentUser && currentUser.role === 'pet_owner' && (
               <button
                 onClick={() => handleNavClick('user_dashboard')}
-                className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-[#FF914D] border border-orange-100 rounded-xl text-sm font-semibold hover:bg-orange-100 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-[#58B368] border border-green-100 rounded-xl text-sm font-semibold hover:bg-green-100 transition-all cursor-pointer"
               >
                 <ClipboardList className="w-4 h-4" />
                 <span>My Dashboard</span>
@@ -89,7 +90,7 @@ export default function Navbar({
             {/* Quick Emergency Button */}
             <button
               onClick={() => handleNavClick('emergency')}
-              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white rounded-xl text-sm font-bold shadow-md shadow-red-200 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-xl text-sm font-bold shadow-md shadow-emerald-200 transition-all cursor-pointer"
             >
               <Phone className="w-4 h-4 fill-white animate-bounce" />
               <span>Emergency Assistance</span>
@@ -98,7 +99,7 @@ export default function Navbar({
             {currentUser ? (
               <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
                 <div className="flex items-center gap-2 bg-slate-50 py-1.5 px-3 rounded-xl border border-slate-100">
-                  <div className="w-7 h-7 rounded-full overflow-hidden bg-orange-500">
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-green-500">
                     <img
                       src={currentUser.avatarUrl || 'https://api.dicebear.com/7.x/adventurer/svg'}
                       alt={currentUser.name}
@@ -119,7 +120,7 @@ export default function Navbar({
                 <button
                   onClick={onLogout}
                   title="Logout"
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all cursor-pointer"
+                  className="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -128,14 +129,14 @@ export default function Navbar({
               <div className="flex items-center space-x-2 border-l border-gray-100 pl-3">
                 <button
                   onClick={() => onOpenAuth('login')}
-                  className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-[#FF914D] font-semibold text-sm transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-4 py-2 text-gray-600 hover:text-[#58B368] font-semibold text-sm transition-all cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login</span>
                 </button>
                 <button
                   onClick={() => onOpenAuth('signup')}
-                  className="px-5 py-2.5 bg-[#FF914D] hover:bg-orange-600 text-white font-bold text-sm rounded-xl shadow-custom hover:shadow-orange-100 transition-all cursor-pointer"
+                  className="px-5 py-2.5 bg-[#58B368] hover:bg-green-600 text-white font-bold text-sm rounded-xl shadow-custom hover:shadow-green-100 transition-all cursor-pointer"
                 >
                   Sign Up
                 </button>
@@ -147,101 +148,167 @@ export default function Navbar({
           <div className="flex items-center md:hidden gap-1.5">
             <button
               onClick={() => handleNavClick('emergency')}
-              className="p-2.5 bg-red-500 text-white rounded-xl shadow-md cursor-pointer"
+              className="p-2.5 bg-emerald-500 text-white rounded-xl shadow-md cursor-pointer"
               title="Urgent Call"
             >
               <Phone className="w-4 h-4 text-white animate-pulse" />
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl border border-orange-100 hover:bg-orange-50 text-gray-600 cursor-pointer"
+              className="p-2.5 rounded-xl border border-green-100 hover:bg-green-50 text-gray-600 cursor-pointer overflow-hidden"
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={mobileMenuOpen ? 'close' : 'open'}
+                  initial={{ opacity: 0, rotate: -45, scale: 0.75 }}
+                  animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                  exit={{ opacity: 0, rotate: 45, scale: 0.75 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="block"
+                >
+                  {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white/95 border-b border-orange-100 shadow-xl transition-all h-screen overflow-y-auto pb-24">
-          <div className="px-4 pt-4 pb-6 space-y-3">
+      <AnimatePresence initial={false}>
+        {mobileMenuOpen && (
+          <motion.div
+            key="mobile-menu"
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'calc(100vh - 72px)', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -8 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="md:hidden bg-white/95 border-b border-green-100 shadow-xl overflow-hidden"
+          >
+          <motion.div
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={{
+              open: {
+                transition: { staggerChildren: 0.045, delayChildren: 0.05 },
+              },
+              closed: {
+                transition: { staggerChildren: 0.025, staggerDirection: -1 },
+              },
+            }}
+            className="h-full overflow-y-auto px-4 pt-4 pb-24 space-y-3"
+          >
             {currentUser && (
-              <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-2">
+              <motion.div
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
+                className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-2"
+              >
                 <img
                   src={currentUser.avatarUrl || 'https://api.dicebear.com/7.x/adventurer/svg'}
                   alt={currentUser.name}
-                  className="w-10 h-10 rounded-full border border-orange-200"
+                  className="w-10 h-10 rounded-full border border-green-200"
                   referrerPolicy="no-referrer"
                 />
                 <div>
                   <h4 className="font-bold text-gray-800">{currentUser.name}</h4>
                   <p className="text-xs text-gray-500 capitalize">{currentUser.role.replace('_', ' ')}</p>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {navLinks.map((link) => (
-              <button
+              <motion.button
                 key={link.id}
                 onClick={() => handleNavClick(link.id)}
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
                 className={`block w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-all ${
                   activeTab === link.id
-                    ? 'bg-orange-50 text-[#FF914D]'
+                    ? 'bg-green-50 text-[#58B368]'
                     : 'text-gray-700 hover:bg-slate-50'
                 }`}
               >
                 {link.label}
-              </button>
+              </motion.button>
             ))}
 
             {currentUser && currentUser.role === 'pet_owner' && (
-              <button
+              <motion.button
                 onClick={() => handleNavClick('user_dashboard')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#FF914D] bg-orange-50/70 border border-orange-100 font-bold transition-all text-left"
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#58B368] bg-green-50/70 border border-green-100 font-bold transition-all text-left"
               >
                 <ClipboardList className="w-5 h-5" />
                 <span>My Pet Dashboard</span>
-              </button>
+              </motion.button>
             )}
 
             {currentUser && currentUser.role === 'veterinarian' && (
-              <button
+              <motion.button
                 onClick={() => handleNavClick('vet_dashboard')}
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-green-700 bg-green-50 border border-green-100 font-bold transition-all text-left"
               >
                 <ClipboardList className="w-5 h-5" />
                 <span>Doctor Portal Dashboard</span>
-              </button>
+              </motion.button>
             )}
 
-            <button
+            <motion.button
               onClick={() => handleNavClick('emergency')}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-red-500 text-white rounded-xl font-extrabold text-center shadow-lg shadow-red-100"
+              variants={{
+                open: { opacity: 1, y: 0 },
+                closed: { opacity: 0, y: -8 },
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-500 text-white rounded-xl font-extrabold text-center shadow-lg shadow-emerald-100"
             >
               <AlertTriangle className="w-5 h-5 text-white animate-bounce" />
               <span>Urgent Emergency Rescue</span>
-            </button>
+            </motion.button>
 
             {currentUser ? (
-              <button
+              <motion.button
                 onClick={() => {
                   onLogout();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 font-bold transition-all text-left"
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-bold transition-all text-left"
               >
                 <X className="w-5 h-5" />
                 <span>Logout Session</span>
-              </button>
+              </motion.button>
             ) : (
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+              <motion.div
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
+                className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100"
+              >
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     onOpenAuth('login');
                   }}
-                  className="w-full py-3 border border-orange-200 text-[#FF914D] font-bold text-sm rounded-xl text-center"
+                  className="w-full py-3 border border-green-200 text-[#58B368] font-bold text-sm rounded-xl text-center"
                 >
                   Login
                 </button>
@@ -250,15 +317,17 @@ export default function Navbar({
                     setMobileMenuOpen(false);
                     onOpenAuth('signup');
                   }}
-                  className="w-full py-3 bg-[#FF914D] text-white font-bold text-sm rounded-xl text-center shadow-md shadow-orange-100"
+                  className="w-full py-3 bg-[#58B368] text-white font-bold text-sm rounded-xl text-center shadow-md shadow-green-100"
                 >
                   Sign Up
                 </button>
-              </div>
+              </motion.div>
             )}
-          </div>
-        </div>
-      )}
+          </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
+

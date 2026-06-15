@@ -297,7 +297,7 @@ export default function App() {
   });
 
   return (
-    <div className="relative min-h-screen bg-[#FFF8F0] font-sans text-[#2D3748] flex flex-col">
+    <div className="relative min-h-screen bg-[#F4FBF3] font-sans text-[#2D3748] flex flex-col">
       {/* 1. Navbar Sticky Widget */}
       <Navbar
         currentUser={currentUser}
@@ -330,7 +330,7 @@ export default function App() {
             />
 
             {/* QUICK SEARCH SECTION CONTROLLER */}
-            <section className="py-12 bg-[#FFF8F0]">
+            <section className="py-12 bg-[#F4FBF3]">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="bg-white border border-black/5 rounded-3xl p-6 sm:p-8 shadow-md max-w-5xl mx-auto space-y-6">
                   
@@ -348,16 +348,16 @@ export default function App() {
                         placeholder="Search Clinic Name..."
                         value={searchName}
                         onChange={(e) => setSearchName(e.target.value)}
-                        className="w-full bg-slate-55 bg-slate-50 p-3.5 pl-11 border border-slate-100 rounded-2xl text-xs sm:text-sm focus:outline-none focus:border-[#FF914D] shadow-sm leading-none font-medium text-gray-800"
+                        className="w-full bg-slate-50 p-3.5 pl-11 border border-slate-100 rounded-2xl text-xs sm:text-sm focus:outline-none focus:border-[#58B368] shadow-sm leading-none font-medium text-gray-800"
                       />
                     </div>
 
                     <div className="relative">
-                      <MapPin className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-[#FF914D]" />
+                      <MapPin className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-[#58B368]" />
                       <select
                         value={searchArea}
                         onChange={(e) => setSearchArea(e.target.value)}
-                        className="w-full bg-slate-55 bg-slate-50 p-3.5 pl-11 border border-slate-100 rounded-2xl text-xs sm:text-sm focus:outline-none focus:border-[#FF914D] shadow-sm h-[48px] font-semibold text-gray-800"
+                        className="w-full bg-slate-50 p-3.5 pl-11 border border-slate-100 rounded-2xl text-xs sm:text-sm focus:outline-none focus:border-[#58B368] shadow-sm h-[48px] font-semibold text-gray-800"
                       >
                         <option value="">All Areas (Bengaluru)</option>
                         <option value="Indiranagar">Indiranagar</option>
@@ -373,7 +373,7 @@ export default function App() {
                     <div className="bg-slate-50 p-2.5 px-4.5 border border-slate-100 rounded-2xl shadow-sm text-left flex flex-col justify-center">
                       <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 leading-none">
                         <span>Search Radius</span>
-                        <span className="text-[#FF914D]">{searchRadius} km</span>
+                        <span className="text-[#58B368]">{searchRadius} km</span>
                       </div>
                       <input
                         type="range"
@@ -382,7 +382,7 @@ export default function App() {
                         step="2"
                         value={searchRadius}
                         onChange={(e) => setSearchRadius(parseInt(e.target.value))}
-                        className="w-full mt-1.5 accent-[#FF914D] cursor-pointer"
+                        className="w-full mt-1.5 accent-[#58B368] cursor-pointer"
                       />
                     </div>
                   </div>
@@ -396,7 +396,7 @@ export default function App() {
                         onClick={() => setFilterSpecialist(spec)}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           filterSpecialist === spec
-                            ? 'bg-[#FF914D] text-white shadow-md'
+                            ? 'bg-[#58B368] text-white shadow-md'
                             : 'bg-white border border-slate-200/60 text-gray-600 hover:bg-slate-50'
                         }`}
                       >
@@ -417,7 +417,7 @@ export default function App() {
                         type="checkbox"
                         checked={filterOpenNow}
                         onChange={(e) => setFilterOpenNow(e.target.checked)}
-                        className="rounded border-gray-300 text-[#FF914D] focus:ring-[#FF914D]"
+                        className="rounded border-gray-300 text-[#58B368] focus:ring-[#58B368]"
                       />
                       <span>🟢 Open Now</span>
                     </label>
@@ -427,7 +427,7 @@ export default function App() {
                         type="checkbox"
                         checked={filterEmergency}
                         onChange={(e) => setFilterEmergency(e.target.checked)}
-                        className="rounded border-gray-300 text-[#FF914D] focus:ring-[#FF914D]"
+                        className="rounded border-gray-300 text-[#58B368] focus:ring-[#58B368]"
                       />
                       <span>🩹 Emergency Services (24x7)</span>
                     </label>
@@ -437,7 +437,7 @@ export default function App() {
                         type="checkbox"
                         checked={filterHomeVisit}
                         onChange={(e) => setFilterHomeVisit(e.target.checked)}
-                        className="rounded border-gray-300 text-[#FF914D] focus:ring-[#FF914D]"
+                        className="rounded border-gray-300 text-[#58B368] focus:ring-[#58B368]"
                       />
                       <span>🏠 Home Visit Available</span>
                     </label>
@@ -447,18 +447,18 @@ export default function App() {
                         type="checkbox"
                         checked={filterHighestRated}
                         onChange={(e) => setFilterHighestRated(e.target.checked)}
-                        className="rounded border-gray-300 text-[#FF914D] focus:ring-[#FF914D]"
+                        className="rounded border-gray-300 text-[#58B368] focus:ring-[#58B368]"
                       />
                       <span>⭐ Highest Rated</span>
                     </label>
                   </div>
 
                   {/* Search results notice */}
-                  <div className="flex justify-between items-center text-xs text-gray-400 pt-1.5 border-t border-orange-50">
+                  <div className="flex justify-between items-center text-xs text-gray-400 pt-1.5 border-t border-green-50">
                     <span>Showing <b>{filteredClinics.length}</b> verified veterinary centers matching filters.</span>
                     <button
                       onClick={() => setActiveTab('find_vets')}
-                      className="text-[#FF914D] font-bold hover:underline"
+                      className="text-[#58B368] font-bold hover:underline"
                     >
                       Maximize Map View →
                     </button>
@@ -469,7 +469,7 @@ export default function App() {
             </section>
 
             {/* LIVE NEARBY VETS SECTION split layout */}
-            <section className="py-16 bg-[#FFF8F0]">
+            <section className="py-16 bg-[#F4FBF3]">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center space-y-3 mb-10">
                   <h2 className="font-display font-black text-3xl text-gray-900 tracking-tight">Verified Veterinary Care Stations Near You</h2>
@@ -480,7 +480,7 @@ export default function App() {
                   {/* Left Column: Clinics list (7/12 cols) */}
                   <div className="lg:col-span-12 space-y-4 max-h-[80vh] overflow-y-auto pr-1">
                     {filteredClinics.length === 0 ? (
-                      <div className="p-12 text-center bg-white rounded-3xl border border-orange-50 space-y-2">
+                      <div className="p-12 text-center bg-white rounded-3xl border border-green-50 space-y-2">
                         <span className="text-4xl block">🔍</span>
                         <h4 className="font-display font-bold text-gray-800 text-lg">No Clinics Found Mapping Selected filters</h4>
                         <p className="text-xs text-gray-400">Try widening your search radius range or turning off specific specialists checkboxes to explore regional options.</p>
@@ -525,8 +525,8 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
                   
-                  <div className="p-6 bg-[#FFF8F0] border border-orange-100/40 rounded-3xl text-left space-y-3.5 hover:shadow-xl transition-all hover:scale-[1.02]">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-100 text-[#FF914D] flex items-center justify-center text-xl shadow-inner">
+                  <div className="p-6 bg-[#F4FBF3] border border-green-100/40 rounded-3xl text-left space-y-3.5 hover:shadow-xl transition-all hover:scale-[1.02]">
+                    <div className="w-12 h-12 rounded-2xl bg-green-100 text-[#58B368] flex items-center justify-center text-xl shadow-inner">
                       🐾
                     </div>
                     <h4 className="font-display font-black text-gray-800 text-base leading-tight">Nearby Certified Clinics</h4>
@@ -535,13 +535,13 @@ export default function App() {
                     </p>
                   </div>
 
-                  <div className="p-6 bg-red-50/30 border border-rose-100/40 rounded-3xl text-left space-y-3.5 hover:shadow-xl transition-all hover:scale-[1.02]">
-                    <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center text-xl shadow-inner animate-pulse">
+                  <div className="p-6 bg-green-50/30 border border-green-100/40 rounded-3xl text-left space-y-3.5 hover:shadow-xl transition-all hover:scale-[1.02]">
+                    <div className="w-12 h-12 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center text-xl shadow-inner animate-pulse">
                       🚑
                     </div>
                     <h4 className="font-display font-black text-gray-800 text-base leading-tight">Live Trauma Alerts</h4>
                     <p className="text-xs text-gray-500 leading-relaxed font-normal">
-                      One critical red-button triggers dynamic localized broadcasts, alerting regional ambulances or available practices with continuous client updates.
+                      One critical green alert button triggers dynamic localized broadcasts, alerting regional ambulances or available practices with continuous client updates.
                     </p>
                   </div>
 
@@ -560,7 +560,7 @@ export default function App() {
             </section>
 
             {/* HOW IT WORKS ILLUSTRATIONS & STEP MATRIX */}
-            <section className="py-16 bg-[#FFF8F0] border-t border-b border-orange-50">
+            <section className="py-16 bg-[#F4FBF3] border-t border-b border-green-50">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
                 <div className="space-y-2">
                   <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Easy Workflow</span>
@@ -569,22 +569,22 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 relative">
                   {/* Connection vector line */}
-                  <div className="hidden sm:block absolute top-10 left-[12%] right-[12%] h-[1.5px] bg-[#FF914D]/20" />
+                  <div className="hidden sm:block absolute top-10 left-[12%] right-[12%] h-[1.5px] bg-[#58B368]/20" />
 
                   <div className="space-y-3 relative z-10">
-                    <span className="w-10 h-10 rounded-full bg-orange-100 text-[#FF914D] border-2 border-white shadow-md flex items-center justify-center font-bold text-xs mx-auto">1</span>
+                    <span className="w-10 h-10 rounded-full bg-green-100 text-[#58B368] border-2 border-white shadow-md flex items-center justify-center font-bold text-xs mx-auto">1</span>
                     <h4 className="font-display font-bold text-gray-800 text-sm">Share Location</h4>
                     <p className="text-[11px] text-gray-500 max-w-[200px] mx-auto">Auto-detect geolocation coordinates to map active animal care clinics nearest to your grid.</p>
                   </div>
 
                   <div className="space-y-3 relative z-10">
-                    <span className="w-10 h-10 rounded-full bg-orange-100 text-[#FF914D] border-2 border-white shadow-md flex items-center justify-center font-bold text-xs mx-auto">2</span>
+                    <span className="w-10 h-10 rounded-full bg-green-100 text-[#58B368] border-2 border-white shadow-md flex items-center justify-center font-bold text-xs mx-auto">2</span>
                     <h4 className="font-display font-bold text-gray-800 text-sm">Select Veterinarian</h4>
                     <p className="text-[11px] text-gray-500 max-w-[200px] mx-auto">Verify clinical specials, distance, ratings, check hours, and pick your doctor visit format.</p>
                   </div>
 
                   <div className="space-y-3 relative z-10">
-                    <span className="w-10 h-10 rounded-full bg-orange-100 text-[#FF914D] border-2 border-white shadow-md flex items-center justify-center font-bold text-xs mx-auto">3</span>
+                    <span className="w-10 h-10 rounded-full bg-green-100 text-[#58B368] border-2 border-white shadow-md flex items-center justify-center font-bold text-xs mx-auto">3</span>
                     <h4 className="font-display font-bold text-gray-800 text-sm">Schedule Care</h4>
                     <p className="text-[11px] text-gray-500 max-w-[200px] mx-auto">Transmit details, secure your preferred checking slot, or trigger immediate distress phone lines.</p>
                   </div>
@@ -608,15 +608,15 @@ export default function App() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
                   
-                  <div className="p-6 bg-[#FFF8F0] border border-orange-100/50 rounded-3xl text-left space-y-4">
-                    <div className="flex text-amber-400">
-                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4.5 h-4.5 fill-amber-300 text-amber-300" />)}
+                  <div className="p-6 bg-[#F4FBF3] border border-green-100/50 rounded-3xl text-left space-y-4">
+                    <div className="flex text-green-400">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4.5 h-4.5 fill-green-300 text-green-300" />)}
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed font-normal">
                       "When Rocky suffered a heat stroke under summer walks, we panicked. One red button alert brought instant directions from Cessna, stabilizing him in 20 minutes! Absolutely invaluable system."
                     </p>
-                    <div className="flex items-center gap-2.5 border-t border-orange-100/40 pt-3">
-                      <div className="w-8 h-8 rounded-full bg-orange-200 overflow-hidden">
+                    <div className="flex items-center gap-2.5 border-t border-green-100/40 pt-3">
+                      <div className="w-8 h-8 rounded-full bg-green-200 overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150" alt="Sarah" className="w-full h-full object-cover" />
                       </div>
                       <div className="text-left">
@@ -626,15 +626,15 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="p-6 bg-[#FFF8F0] border border-orange-100/50 rounded-3xl text-left space-y-4">
-                    <div className="flex text-amber-400">
-                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4.5 h-4.5 fill-amber-300 text-amber-300" />)}
+                  <div className="p-6 bg-[#F4FBF3] border border-green-100/50 rounded-3xl text-left space-y-4">
+                    <div className="flex text-green-400">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4.5 h-4.5 fill-green-300 text-green-300" />)}
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed font-normal">
                       "I booked a domestic deworming home checker visit for my feline Luna. The practitioner was incredibly gentle and patient. Luna felt totally secure right inside our living room layout."
                     </p>
-                    <div className="flex items-center gap-2.5 border-t border-orange-100/40 pt-3">
-                      <div className="w-8 h-8 rounded-full bg-orange-200 overflow-hidden">
+                    <div className="flex items-center gap-2.5 border-t border-green-100/40 pt-3">
+                      <div className="w-8 h-8 rounded-full bg-green-200 overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=150" alt="Rohan" className="w-full h-full object-cover" />
                       </div>
                       <div className="text-left">
@@ -644,15 +644,15 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="p-6 bg-[#FFF8F0] border border-orange-100/50 rounded-3xl text-left space-y-4">
-                    <div className="flex text-amber-400">
-                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4.5 h-4.5 fill-amber-300 text-amber-300" />)}
+                  <div className="p-6 bg-[#F4FBF3] border border-green-100/50 rounded-3xl text-left space-y-4">
+                    <div className="flex text-green-400">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-4.5 h-4.5 fill-green-300 text-green-300" />)}
                     </div>
                     <p className="text-xs text-gray-600 leading-relaxed font-normal">
                       "Finding verified avian specialists is famously tough in Bengaluru. QuickVet made filtering species focus trivial. Cessna treated my injured parakeet with pristine medical tools."
                     </p>
-                    <div className="flex items-center gap-2.5 border-t border-orange-100/40 pt-3">
-                      <div className="w-8 h-8 rounded-full bg-orange-200 overflow-hidden">
+                    <div className="flex items-center gap-2.5 border-t border-green-100/40 pt-3">
+                      <div className="w-8 h-8 rounded-full bg-green-200 overflow-hidden">
                         <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" alt="Ananya" className="w-full h-full object-cover" />
                       </div>
                       <div className="text-left">
@@ -667,7 +667,7 @@ export default function App() {
             </section>
 
             {/* VET REGISTRATION SECTION CTA BANNER */}
-            <section className="py-16 bg-[#FFF8F0] border-t border-orange-100/50">
+            <section className="py-16 bg-[#F4FBF3] border-t border-green-100/50">
               <div className="max-w-5xl mx-auto px-4 text-center bg-gradient-to-r from-green-600 to-emerald-700 rounded-[36px] p-8 sm:p-12 text-white shadow-xl space-y-5 relative overflow-hidden">
                 <div className="absolute top-[-50px] right-[-50px] w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
                 <h3 className="font-display font-black text-2xl sm:text-3.5xl tracking-normal">Are You a Practicing Veterinarian?</h3>
@@ -695,12 +695,12 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+            className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch h-[calc(100vh-140px)] min-h-[550px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Left filter and lists column (5 Cols) */}
-              <div className="lg:col-span-5 flex flex-col space-y-4 h-full">
-                <div className="bg-white p-5 rounded-3xl border border-orange-50 shadow-sm space-y-4 flex-shrink-0 text-left">
+              <div className="lg:col-span-5 flex flex-col space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-8rem)] self-start min-h-0">
+                <div className="bg-white p-5 rounded-3xl border border-green-100 shadow-sm space-y-4 flex-shrink-0 text-left">
                   <h3 className="font-display font-black text-lg text-gray-800">Advanced Locator Filters</h3>
                   
                   {/* Name field */}
@@ -709,14 +709,14 @@ export default function App() {
                     placeholder="Search Clinic Name..."
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs sm:text-sm focus:outline-none focus:border-orange-400 font-semibold"
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#58B368] font-semibold"
                   />
 
                   {/* Range selection coordinates haversine slider */}
                   <div className="flex flex-col justify-center">
                     <div className="flex justify-between text-[10px] font-black uppercase text-gray-400">
                       <span>Search Range</span>
-                      <span className="text-[#FF914D]">{searchRadius} km</span>
+                      <span className="text-[#2F855A]">{searchRadius} km</span>
                     </div>
                     <input
                       type="range"
@@ -725,16 +725,16 @@ export default function App() {
                       step="2"
                       value={searchRadius}
                       onChange={(e) => setSearchRadius(parseInt(e.target.value))}
-                      className="w-full mt-1.5 accent-[#FF914D]"
+                      className="w-full mt-1.5 accent-[#58B368]"
                     />
                   </div>
 
                   {/* Badges row checklists */}
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-gray-500 pt-1.5 border-t border-orange-50">
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-gray-500 pt-1.5 border-t border-green-100">
                     <button
                       onClick={() => setFilterOpenNow(!filterOpenNow)}
                       className={`px-2 py-1.5 rounded-lg border font-bold transition-colors cursor-pointer ${
-                        filterOpenNow ? 'bg-orange-50 border-[#FF914D] text-[#FF914D]' : 'bg-white text-gray-500'
+                        filterOpenNow ? 'bg-green-50 border-[#58B368] text-[#2F855A]' : 'bg-white text-gray-500'
                       }`}
                     >
                       🟢 Open Now
@@ -742,7 +742,7 @@ export default function App() {
                     <button
                       onClick={() => setFilterEmergency(!filterEmergency)}
                       className={`px-2 py-1.5 rounded-lg border font-bold transition-colors cursor-pointer ${
-                        filterEmergency ? 'bg-orange-50 border-[#FF914D] text-[#FF914D]' : 'bg-white text-gray-500'
+                        filterEmergency ? 'bg-green-50 border-[#58B368] text-[#2F855A]' : 'bg-white text-gray-500'
                       }`}
                     >
                       🩹 Emergency Unit
@@ -750,7 +750,7 @@ export default function App() {
                     <button
                       onClick={() => setFilterHomeVisit(!filterHomeVisit)}
                       className={`px-2 py-1.5 rounded-lg border font-bold transition-colors cursor-pointer ${
-                        filterHomeVisit ? 'bg-orange-50 border-[#FF914D] text-[#FF914D]' : 'bg-white text-gray-500'
+                        filterHomeVisit ? 'bg-green-50 border-[#58B368] text-[#2F855A]' : 'bg-white text-gray-500'
                       }`}
                     >
                       🏠 Home Doc
@@ -759,9 +759,9 @@ export default function App() {
                 </div>
 
                 {/* Clinics dynamic checklist scroll list */}
-                <div className="flex-grow overflow-y-auto space-y-3.5 pr-1">
+                <div className="flex-1 space-y-3.5 pr-1 lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:min-h-0">
                   {filteredClinics.length === 0 ? (
-                    <div className="bg-white rounded-3xl p-8 border border-orange-50 text-center text-slate-400 text-xs">
+                    <div className="bg-white rounded-3xl p-8 border border-green-100 text-center text-slate-400 text-xs">
                       No results match advanced locate options. Widening filter specs can discover more.
                     </div>
                   ) : (
@@ -769,8 +769,8 @@ export default function App() {
                       <div
                         key={clinic.id}
                         onClick={() => setSelectedClinicId(clinic.id)}
-                        className={`p-4 bg-white border rounded-2.5xl rounded-2xl cursor-pointer hover:border-orange-200 text-left space-y-1.5 shadow-sm transition-all ${
-                          selectedClinicId === clinic.id ? 'border-[#FF914D] ring-2 ring-[#FF914D]/10 bg-orange-50/10' : 'border-orange-50'
+                        className={`p-4 bg-white border rounded-2xl cursor-pointer hover:border-green-200 text-left space-y-1.5 shadow-sm transition-all ${
+                          selectedClinicId === clinic.id ? 'border-[#58B368] ring-2 ring-[#58B368]/15 bg-green-50/50' : 'border-green-100'
                         }`}
                       >
                         <div className="flex justify-between items-start gap-1">
@@ -790,7 +790,7 @@ export default function App() {
                               e.stopPropagation();
                               setBookingClinic(clinic);
                             }}
-                            className="bg-[#FF914D] text-white text-[10px] font-bold px-3 py-1 rounded-lg"
+                            className="bg-[#58B368] text-white text-[10px] font-bold px-3 py-1 rounded-lg"
                           >
                             Book Visit
                           </button>
@@ -811,8 +811,8 @@ export default function App() {
               </div>
 
               {/* Right Maps column (7 Cols) */}
-              <div className="lg:col-span-7 h-full">
-                <div className="w-full h-full rounded-3xl overflow-hidden border">
+              <div className="lg:col-span-7">
+                <div className="w-full h-[360px] sm:h-[430px] lg:h-[calc(100vh-8rem)] lg:max-h-[680px] min-h-[340px] rounded-3xl overflow-hidden border border-green-100 shadow-sm">
                   {/* FULL EXPAND MAP COMPONENT LAYER */}
                   <InteractiveMap
                     clinics={filteredClinics}
@@ -854,7 +854,7 @@ export default function App() {
             className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-left space-y-6"
           >
             <div className="border-b pb-3 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-[#FF914D] bg-orange-100/40 py-1 px-2.5 rounded-md">Feedback Vault</span>
+              <span className="text-[10px] uppercase font-bold text-[#58B368] bg-green-100/40 py-1 px-2.5 rounded-md">Feedback Vault</span>
               <h3 className="font-display font-black text-3xl text-gray-900 tracking-tight">Recent Verified Clinical Reviews</h3>
               <p className="text-gray-500 text-xs sm:text-sm">Real stories from local companion pet parents in India.</p>
             </div>
@@ -862,7 +862,7 @@ export default function App() {
             {/* List all clinics feedback reviews sorted nicely */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {clinics.map(clinic => (
-                <div key={clinic.id} className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-sm hover:border-[#FF914D]/40 transition-colors">
+                <div key={clinic.id} className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-sm hover:border-[#58B368]/40 transition-colors">
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-display font-bold text-gray-800 text-sm leading-none">{clinic.name}</h4>
@@ -870,7 +870,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => setReviewsClinic(clinic)}
-                      className="text-xs text-[#FF914D] font-bold hover:underline"
+                      className="text-xs text-[#58B368] font-bold hover:underline"
                     >
                       View All Feedback →
                     </button>
@@ -991,3 +991,5 @@ export default function App() {
     </div>
   );
 }
+
+

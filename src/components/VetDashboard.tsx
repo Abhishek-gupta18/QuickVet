@@ -85,8 +85,8 @@ export default function VetDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Sidebar Panel */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-orange-50 shadow-sm space-y-6">
-          <div className="flex items-center gap-3 border-b border-orange-50 pb-5">
+        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-green-50 shadow-sm space-y-6">
+          <div className="flex items-center gap-3 border-b border-green-50 pb-5">
             <img
               src={currentUser.avatarUrl || 'https://api.dicebear.com/7.x/adventurer/svg'}
               alt={currentUser.name}
@@ -135,7 +135,7 @@ export default function VetDashboard({
         </div>
 
         {/* Right Dashboard Space */}
-        <div className="lg:col-span-9 bg-white p-6 sm:p-8 rounded-3xl border border-orange-50 shadow-sm text-left minimum-h-[500px]">
+        <div className="lg:col-span-9 bg-white p-6 sm:p-8 rounded-3xl border border-green-50 shadow-sm text-left min-h-[500px]">
           
           {/* OVERVIEW PANEL */}
           {activeSubTab === 'overview' && (
@@ -155,7 +155,7 @@ export default function VetDashboard({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-amber-50 to-white border-amber-100 shadow-sm">
+                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-lime-50 to-white border-lime-100 shadow-sm">
                   <span className="text-xl">⏳</span>
                   <div>
                     <span className="block text-xl font-black text-gray-800 font-display">{clinicBookings.filter(b => b.status === 'pending').length}</span>
@@ -163,15 +163,15 @@ export default function VetDashboard({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-red-50/60 to-white border-rose-100 shadow-sm">
+                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-emerald-50/60 to-white border-emerald-100 shadow-sm">
                   <span className="text-xl">🚨</span>
                   <div>
-                    <span className="block text-xl font-black text-red-600 font-display">{activeEmergencies.length}</span>
-                    <span className="text-[9px] uppercase font-bold text-red-500 font-sans">Active Emergencies</span>
+                    <span className="block text-xl font-black text-emerald-600 font-display">{activeEmergencies.length}</span>
+                    <span className="text-[9px] uppercase font-bold text-emerald-500 font-sans">Active Emergencies</span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-yellow-50 to-white border-yellow-100 shadow-sm animate-fade-in">
+                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-lime-50 to-white border-lime-100 shadow-sm animate-fade-in">
                   <span className="text-xl">⭐️</span>
                   <div>
                     <span className="block text-xl font-black text-gray-800 font-display">{clinic?.rating || 5.0} ★</span>
@@ -184,7 +184,7 @@ export default function VetDashboard({
               <div className="space-y-4 pt-3">
                 <div className="flex items-center justify-between border-b pb-2">
                   <h4 className="font-display font-extrabold text-gray-800 text-sm">Critical Active Regional Emergencies</h4>
-                  <span className="text-[10px] text-red-500 bg-red-100/60 px-2 py-0.5 rounded font-bold animate-pulse">Broadcast Channel Active</span>
+                  <span className="text-[10px] text-emerald-500 bg-emerald-100/60 px-2 py-0.5 rounded font-bold animate-pulse">Broadcast Channel Active</span>
                 </div>
 
                 {activeEmergencies.length === 0 ? (
@@ -194,20 +194,20 @@ export default function VetDashboard({
                 ) : (
                   <div className="space-y-3">
                     {activeEmergencies.map((em) => (
-                      <div key={em.id} className="p-4 bg-white border border-red-100 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm border-l-4 border-l-red-500">
+                      <div key={em.id} className="p-4 bg-white border border-emerald-100 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm border-l-4 border-l-emerald-500">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-black text-sm text-gray-800">{em.petName} ({em.petType})</span>
-                            <span className="text-[9px] bg-red-50 text-red-600 font-bold px-1.5 py-0.5 rounded uppercase">{em.status}</span>
+                            <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold px-1.5 py-0.5 rounded uppercase">{em.status}</span>
                           </div>
                           <p className="text-xs text-gray-500">📍 <b>Address:</b> {em.address} • Contact: {em.phone}</p>
-                          <p className="text-xs text-red-700 italic font-semibold">"Symptom: {em.description}"</p>
+                          <p className="text-xs text-emerald-700 italic font-semibold">"Symptom: {em.description}"</p>
                         </div>
 
                         {em.status === 'pending' || em.status === 'notified' ? (
                           <button
                             onClick={() => handleClaimEmergency(em.id)}
-                            className="px-4 py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer self-start sm:self-center flex items-center gap-1"
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer self-start sm:self-center flex items-center gap-1"
                           >
                             <Phone className="w-3.5 h-3.5" />
                             <span>Claim & Call Parent</span>
@@ -270,7 +270,7 @@ export default function VetDashboard({
                             </button>
                             <button
                               onClick={() => handleActionBooking(book.id, 'cancelled')}
-                              className="p-2 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-xl transition-all cursor-pointer"
+                              className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer"
                               title="Decline Slot"
                             >
                               <X className="w-4 h-4" />
@@ -312,7 +312,7 @@ export default function VetDashboard({
               ) : (
                 <div className="space-y-3.5">
                   {homeVisits.map((book) => (
-                    <div key={book.id} className="p-5 bg-white border border-orange-50 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border-l-4 border-l-green-600">
+                    <div key={book.id} className="p-5 bg-white border border-green-50 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border-l-4 border-l-green-600">
                       <div className="space-y-1.5 text-left text-xs text-gray-500 leading-normal">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-display font-black text-base text-gray-800">{book.petOwnerName}</span>
@@ -377,18 +377,18 @@ export default function VetDashboard({
               ) : (
                 <div className="space-y-3.5">
                   {clinicReviews.map((rev) => (
-                    <div key={rev.id} className="p-4 bg-white border rounded-2xl text-left space-y-2.5 shadow-sm border-orange-50">
+                    <div key={rev.id} className="p-4 bg-white border rounded-2xl text-left space-y-2.5 shadow-sm border-green-50">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs text-gray-800">{rev.userName} ({rev.userEmail})</span>
                         <span className="text-[10px] text-gray-400 font-semibold">{rev.date}</span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <div className="flex text-amber-400">
+                        <div className="flex text-lime-400">
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
                               key={i}
-                              className={`w-3 h-3 ${i < rev.rating ? 'fill-amber-400' : 'text-gray-200'}`}
+                              className={`w-3 h-3 ${i < rev.rating ? 'fill-lime-400' : 'text-gray-200'}`}
                             />
                           ))}
                         </div>
@@ -410,3 +410,4 @@ export default function VetDashboard({
     </div>
   );
 }
+

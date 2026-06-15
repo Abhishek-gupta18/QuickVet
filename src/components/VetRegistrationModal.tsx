@@ -88,7 +88,7 @@ export default function VetRegistrationModal({
         particleCount: 100,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#FF914D', '#FFD54F', '#4CAF50']
+        colors: ['#58B368', '#BFE7C4', '#4CAF50']
       });
     } catch (err) {
       alert('Clinic registration failed. Check container database logs.');
@@ -99,10 +99,10 @@ export default function VetRegistrationModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-orange-50 flex flex-col h-[85vh]">
+      <div className="relative bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-green-50 flex flex-col h-[85vh]">
         
         {/* Banner header top */}
-        <div className="bg-gradient-to-r from-green-600 via-[#4CAF50] to-[#FFD54F] px-6 py-5 text-white flex items-center justify-between flex-shrink-0">
+        <div className="bg-gradient-to-r from-green-600 via-[#4CAF50] to-[#BFE7C4] px-6 py-5 text-white flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2">
             <Landmark className="w-6 h-6 animate-pulse" />
             <div>
@@ -148,7 +148,7 @@ export default function VetRegistrationModal({
             
             {/* Left Column: Benefits (4/12 cols) */}
             <div className="md:col-span-4 bg-green-50/50 p-5 rounded-2xl border border-green-100/30 text-left space-y-4 max-h-[60vh] overflow-y-auto">
-              <span className="text-[10px] uppercase font-black text-[#4CAF50] bg-green-105 bg-white/80 py-1 px-2 rounded-md shadow-inner">
+              <span className="text-[10px] uppercase font-black text-[#4CAF50] bg-white/80 py-1 px-2 rounded-md shadow-inner">
                 Network Perks
               </span>
               <h4 className="font-display font-bold text-gray-800 text-base">Are You a Veterinarian?</h4>
@@ -165,8 +165,8 @@ export default function VetRegistrationModal({
                 </li>
 
                 <li className="flex gap-2 items-start">
-                  <div className="bg-red-500/10 p-1 rounded-md text-red-600 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-red-500" />
+                  <div className="bg-emerald-500/10 p-1 rounded-md text-emerald-600 mt-0.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
                   </div>
                   <div>
                     <b>Red Alert Trauma calls</b>
@@ -175,8 +175,8 @@ export default function VetRegistrationModal({
                 </li>
 
                 <li className="flex gap-2 items-start">
-                  <div className="bg-yellow-500/10 p-1 rounded-md text-yellow-700 mt-0.5">
-                    <Heart className="w-3.5 h-3.5 fill-yellow-600 text-yellow-600" />
+                  <div className="bg-lime-500/10 p-1 rounded-md text-lime-700 mt-0.5">
+                    <Heart className="w-3.5 h-3.5 fill-lime-600 text-lime-600" />
                   </div>
                   <div>
                     <b>Grow Local Clientele</b>
@@ -188,7 +188,7 @@ export default function VetRegistrationModal({
 
             {/* Right Column: Inputs fields Form (8/12 cols) */}
             <form onSubmit={handleSubmit} className="md:col-span-8 space-y-4 text-left">
-              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-orange-50">Clinic Details Form</h4>
+              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50">Clinic Details Form</h4>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -358,3 +358,4 @@ export default function VetRegistrationModal({
     </div>
   );
 }
+

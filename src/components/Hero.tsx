@@ -18,21 +18,21 @@ export default function Hero({
   onNavigateToEmergency,
 }: HeroProps) {
   return (
-    <div className="relative bg-[#FFF8F0] min-h-[calc(100vh-80px)] flex items-center pt-6 pb-16 overflow-hidden">
+    <div className="relative bg-[#F4FBF3] min-h-[calc(100vh-80px)] flex items-center pt-6 pb-16 overflow-hidden">
       {/* Decorative Warm Pet Illustrations/Bubbles Background */}
-      <div className="absolute top-1/2 left-[-150px] w-[500px] h-[500px] rounded-full bg-orange-100/30 blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-[-150px] w-[500px] h-[500px] rounded-full bg-green-100/30 blur-3xl pointer-events-none" />
       <div className="absolute top-10 right-[-100px] w-[400px] h-[400px] rounded-full bg-green-100/30 blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Hero Descriptive Left Side (5 or 6 Cols) */}
           <div className="lg:col-span-6 space-y-6 text-left relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-100 border border-red-200 text-red-600 text-xs font-bold leading-none select-none">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-600 text-xs font-bold leading-none select-none">
               <span>🚑</span> Urgent Help Available 24/7
             </div>
 
             <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-[52px] text-gray-900 tracking-tight leading-[1.1] text-balance">
-              Find Trusted <span className="text-[#FF914D]">Veterinary Care</span> Near You
+              Find Trusted <span className="text-[#58B368]">Veterinary Care</span> Near You
             </h1>
 
             <p className="text-gray-600 text-lg font-normal max-w-xl leading-relaxed text-balance">
@@ -43,14 +43,14 @@ export default function Hero({
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-3">
               <button
                 onClick={onNavigateToFind}
-                className="px-8 py-4 bg-[#FF914D] hover:bg-orange-600 active:scale-95 text-white font-extrabold rounded-2xl shadow-[0_10px_15px_-3px_rgba(255,145,77,0.3)] hover:shadow-[0_10px_20px_-3px_rgba(255,145,77,0.4)] transition-all text-center cursor-pointer text-base"
+                className="px-8 py-4 bg-[#58B368] hover:bg-green-600 active:scale-95 text-white font-extrabold rounded-2xl shadow-[0_10px_15px_-3px_rgba(88,179,104,0.3)] hover:shadow-[0_10px_20px_-3px_rgba(88,179,104,0.4)] transition-all text-center cursor-pointer text-base"
               >
                 Find Nearby Vets
               </button>
 
               <button
                 onClick={onNavigateToEmergency}
-                className="px-8 py-4 bg-red-500 hover:bg-red-600 active:scale-95 text-white font-extrabold rounded-2xl shadow-[0_10px_15px_-3px_rgba(239,68,68,0.3)] hover:shadow-[0_10px_20px_-3px_rgba(239,68,68,0.4)] transition-all text-center cursor-pointer text-base flex items-center justify-center gap-2"
+                className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold rounded-2xl shadow-[0_10px_15px_-3px_rgba(47,133,90,0.3)] hover:shadow-[0_10px_20px_-3px_rgba(47,133,90,0.4)] transition-all text-center cursor-pointer text-base flex items-center justify-center gap-2"
               >
                 <HeartPulse className="w-5 h-5 text-white animate-pulse" />
                 Emergency Help
@@ -60,17 +60,17 @@ export default function Hero({
             {/* Aligned Geometric Balance stats counter links */}
             <div className="flex gap-6 pt-4 max-w-xl">
               <div className="flex flex-col">
-                <span className="text-2.5xl font-black text-[#FF914D] font-display">500+</span>
+                <span className="text-2.5xl font-black text-[#58B368] font-display">500+</span>
                 <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Verified Clinics</span>
               </div>
-              <div className="w-[1.5px] bg-orange-100/30 self-stretch my-1" />
+              <div className="w-[1.5px] bg-green-100/30 self-stretch my-1" />
               <div className="flex flex-col">
                 <span className="text-2.5xl font-black text-[#4CAF50] font-display">10k+</span>
                 <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Pets Assisted</span>
               </div>
-              <div className="w-[1.5px] bg-orange-100/30 self-stretch my-1" />
+              <div className="w-[1.5px] bg-green-100/30 self-stretch my-1" />
               <div className="flex flex-col">
-                <span className="text-2.5xl font-black text-[#FFD54F] font-display">4.8★</span>
+                <span className="text-2.5xl font-black text-[#BFE7C4] font-display">4.8★</span>
                 <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">User Rating</span>
               </div>
             </div>
@@ -92,8 +92,8 @@ export default function Hero({
             />
 
             {/* Overlay floating statistics cards */}
-            <div className="absolute top-4 left-4 z-[999] pointer-events-none bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-orange-100 shadow-lg flex items-center gap-3">
-              <div className="bg-orange-100 p-2 rounded-xl text-[#FF914D]">
+            <div className="absolute top-4 left-4 z-[999] pointer-events-none bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-green-100 shadow-lg flex items-center gap-3">
+              <div className="bg-green-100 p-2 rounded-xl text-[#58B368]">
                 <Users className="w-5 h-5" />
               </div>
               <div className="text-left">
@@ -112,9 +112,9 @@ export default function Hero({
               </div>
             </div>
 
-            <div className="absolute bottom-4 right-4 z-[999] pointer-events-none bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-amber-100 shadow-lg flex items-center gap-3">
-              <div className="bg-amber-100 p-2 rounded-xl text-amber-500">
-                <Star className="w-5 h-5 fill-amber-500" />
+            <div className="absolute bottom-4 right-4 z-[999] pointer-events-none bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-lime-100 shadow-lg flex items-center gap-3">
+              <div className="bg-lime-100 p-2 rounded-xl text-lime-500">
+                <Star className="w-5 h-5 fill-lime-500" />
               </div>
               <div className="text-left">
                 <span className="block text-sm font-black text-gray-800 font-display">4.8 ★ Rating</span>
@@ -127,3 +127,4 @@ export default function Hero({
     </div>
   );
 }
+

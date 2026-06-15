@@ -78,10 +78,10 @@ export default function ReviewsModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative bg-[#FFF8F0] w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-orange-100 flex flex-col h-[85vh]">
+      <div className="relative bg-[#F4FBF3] w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-green-100 flex flex-col h-[85vh]">
         
         {/* Modal Top Panel banner */}
-        <div className="bg-gradient-to-r from-[#FF914D] to-[#FFD54F] px-6 py-4.5 flex items-center justify-between text-white flex-shrink-0">
+        <div className="bg-gradient-to-r from-[#58B368] to-[#BFE7C4] px-6 py-4.5 flex items-center justify-between text-white flex-shrink-0">
           <div>
             <span className="text-[10px] uppercase font-extrabold tracking-widest bg-white/20 px-2 py-0.5 rounded-md">Feedback Station</span>
             <h3 className="font-display font-black text-lg md:text-xl mt-0.5">{clinic.name}</h3>
@@ -99,11 +99,11 @@ export default function ReviewsModal({
           
           {/* Left panel: list of past feedback reviews (7/12 cols) */}
           <div className="md:col-span-7 flex flex-col space-y-4">
-            <div className="flex items-center justify-between border-b pb-2 border-orange-100">
+            <div className="flex items-center justify-between border-b pb-2 border-green-100">
               <h4 className="font-display font-bold text-gray-800 text-sm">Patient Reviews ({reviews.length})</h4>
               <button
                 onClick={fetchReviews}
-                className="text-xs text-[#FF914D] hover:underline flex items-center gap-1 font-semibold"
+                className="text-xs text-[#58B368] hover:underline flex items-center gap-1 font-semibold"
                 title="Refresh feed"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -113,29 +113,29 @@ export default function ReviewsModal({
 
             {loading ? (
               <div className="flex-grow flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-t-[#FF914D] border-orange-100" />
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-t-[#58B368] border-green-100" />
               </div>
             ) : reviews.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-2xl border border-orange-100/50 space-y-2 flex-grow flex flex-col justify-center">
-                <HeartCrack className="w-10 h-10 text-orange-200 mx-auto" />
+              <div className="p-8 text-center bg-white rounded-2xl border border-green-100/50 space-y-2 flex-grow flex flex-col justify-center">
+                <HeartCrack className="w-10 h-10 text-green-200 mx-auto" />
                 <h5 className="font-bold text-gray-700">No Patient Reviews Yet</h5>
                 <p className="text-xs text-gray-400">Be the very first pet parent to publish feedback about their experience!</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
                 {reviews.map((rev) => (
-                  <div key={rev.id} className="p-4 bg-white border border-orange-100/30 rounded-2xl space-y-1.5 shadow-sm text-left">
+                  <div key={rev.id} className="p-4 bg-white border border-green-100/30 rounded-2xl space-y-1.5 shadow-sm text-left">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-gray-800">{rev.userName}</span>
                       <span className="text-[10px] text-gray-400 font-semibold">{rev.date}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <div className="flex text-amber-400">
+                      <div className="flex text-lime-400">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-3 h-3 ${i < rev.rating ? 'fill-amber-400' : 'text-gray-200'}`}
+                            className={`w-3 h-3 ${i < rev.rating ? 'fill-lime-400' : 'text-gray-200'}`}
                           />
                         ))}
                       </div>
@@ -154,9 +154,9 @@ export default function ReviewsModal({
           </div>
 
           {/* Right panel: submit review form (5/12 cols) */}
-          <div className="md:col-span-5 border-t md:border-t-0 md:border-l border-orange-100 md:pl-6 pt-6 md:pt-0 text-left">
+          <div className="md:col-span-5 border-t md:border-t-0 md:border-l border-green-100 md:pl-6 pt-6 md:pt-0 text-left">
             {!currentUser ? (
-              <div className="bg-white p-5 rounded-2xl border border-orange-100/50 text-center space-y-3">
+              <div className="bg-white p-5 rounded-2xl border border-green-100/50 text-center space-y-3">
                 <h5 className="font-display font-bold text-gray-800 text-sm">Submit Clinical Audit</h5>
                 <p className="text-xs text-gray-400 leading-relaxed">
                   Only registered pet parents can publish clinical feedback reviews. Login or create a fast profile in seconds to submit yours.
@@ -164,21 +164,21 @@ export default function ReviewsModal({
                 <div className="flex gap-2 justify-center">
                   <button
                     onClick={() => onOpenAuth('login')}
-                    className="px-4 py-2 border border-orange-200 text-[#FF914D] font-bold rounded-lg text-[11px]"
+                    className="px-4 py-2 border border-green-200 text-[#58B368] font-bold rounded-lg text-[11px]"
                   >
                     Log In
                   </button>
                   <button
                     onClick={() => onOpenAuth('signup')}
-                    className="px-4 py-2 bg-[#FF914D] text-white font-bold rounded-lg text-[11px]"
+                    className="px-4 py-2 bg-[#58B368] text-white font-bold rounded-lg text-[11px]"
                   >
                     Register
                   </button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmitReview} className="space-y-3.5 bg-white p-5 rounded-2xl border border-orange-100/40">
-                <h5 className="font-display font-black text-gray-800 text-sm pb-1.5 border-b border-orange-50">Write Your Feedback</h5>
+              <form onSubmit={handleSubmitReview} className="space-y-3.5 bg-white p-5 rounded-2xl border border-green-100/40">
+                <h5 className="font-display font-black text-gray-800 text-sm pb-1.5 border-b border-green-50">Write Your Feedback</h5>
 
                 {/* Rating select slider */}
                 <div>
@@ -193,7 +193,7 @@ export default function ReviewsModal({
                       >
                         <Star
                           className={`w-6 h-6 cursor-pointer transition-colors ${
-                            i < rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                            i < rating ? 'fill-lime-400 text-lime-400' : 'text-slate-200'
                           }`}
                         />
                       </button>
@@ -208,7 +208,7 @@ export default function ReviewsModal({
                   <select
                     value={petType}
                     onChange={(e) => setPetType(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-orange-400 h-[38px]"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-green-400 h-[38px]"
                   >
                     <option value="Dog">🐶 Dog Parent</option>
                     <option value="Cat">🐱 Cat Parent</option>
@@ -227,14 +227,14 @@ export default function ReviewsModal({
                     placeholder="Tell your local community about the wait times, vet bedside manner, diagnostics, and care of this clinic..."
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-orange-400 leading-normal"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-green-400 leading-normal"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={publishing}
-                  className="w-full py-2.5 bg-[#FF914D] hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 bg-[#58B368] hover:bg-green-600 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{publishing ? 'Publishing Review...' : 'Send Review Rating'}</span>
@@ -248,3 +248,4 @@ export default function ReviewsModal({
     </div>
   );
 }
+

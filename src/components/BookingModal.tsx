@@ -66,9 +66,9 @@ export default function BookingModal({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative bg-[#FFF8F0] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-orange-100 flex flex-col">
+      <div className="relative bg-[#F4FBF3] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-green-100 flex flex-col">
         {/* Header decoration */}
-        <div className="bg-gradient-to-r from-[#FF914D] to-[#FFD54F] px-6 py-4 flex items-center justify-between text-white">
+        <div className="bg-gradient-to-r from-[#58B368] to-[#BFE7C4] px-6 py-4 flex items-center justify-between text-white">
           <div>
             <h3 className="font-display font-black text-lg sm:text-xl">Book Veterinary Slot</h3>
             <p className="text-white/80 text-xs mt-0.5 line-clamp-1">{clinic.name}</p>
@@ -84,7 +84,7 @@ export default function BookingModal({
         {/* Guest fallback block */}
         {!currentUser ? (
           <div className="p-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto text-[#FF914D]">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto text-[#58B368]">
               <Clock className="w-8 h-8" />
             </div>
             <h4 className="font-display font-bold text-lg text-gray-800">Authorization Required First</h4>
@@ -97,7 +97,7 @@ export default function BookingModal({
                   onClose();
                   onOpenAuth('login');
                 }}
-                className="px-5 py-2.5 border border-orange-200 text-[#FF914D] font-bold rounded-xl text-sm"
+                className="px-5 py-2.5 border border-green-200 text-[#58B368] font-bold rounded-xl text-sm"
               >
                 Log In
               </button>
@@ -106,7 +106,7 @@ export default function BookingModal({
                   onClose();
                   onOpenAuth('signup');
                 }}
-                className="px-5 py-2.5 bg-[#FF914D] text-white font-bold rounded-xl text-sm shadow-md shadow-orange-100"
+                className="px-5 py-2.5 bg-[#58B368] text-white font-bold rounded-xl text-sm shadow-md shadow-green-100"
               >
                 Sign Up
               </button>
@@ -119,10 +119,10 @@ export default function BookingModal({
               <Smile className="w-8 h-8" />
             </div>
             <h4 className="font-display font-bold text-xl text-gray-800">Booking Requested!</h4>
-            <div className="bg-white p-4.5 rounded-2xl border border-orange-100/50 text-left space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between font-bold text-gray-800 border-b pb-1.5 border-orange-50 mb-1.5">
+            <div className="bg-white p-4.5 rounded-2xl border border-green-100/50 text-left space-y-2 text-sm text-gray-600">
+              <div className="flex justify-between font-bold text-gray-800 border-b pb-1.5 border-green-50 mb-1.5">
                 <span>{service}</span>
-                <span className="capitalize text-xs px-2 py-0.5 rounded-md bg-orange-50 text-[#FF914D]">{type.replace('_', ' ')}</span>
+                <span className="capitalize text-xs px-2 py-0.5 rounded-md bg-green-50 text-[#58B368]">{type.replace('_', ' ')}</span>
               </div>
               <p><b>Clinic:</b> {clinic.name}</p>
               <p><b>Pet:</b> {petName} ({petType})</p>
@@ -133,7 +133,7 @@ export default function BookingModal({
             </p>
             <button
               onClick={onClose}
-              className="w-full py-3 bg-[#FF914D] text-white font-bold rounded-xl text-sm mt-3"
+              className="w-full py-3 bg-[#58B368] text-white font-bold rounded-xl text-sm mt-3"
             >
               Done, Close Modal
             </button>
@@ -150,7 +150,7 @@ export default function BookingModal({
                   onClick={() => setType('clinic_visit')}
                   className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
                     type === 'clinic_visit'
-                      ? 'border-[#FF914D] bg-orange-50/70 text-[#FF914D]'
+                      ? 'border-[#58B368] bg-green-50/70 text-[#58B368]'
                       : 'border-slate-200 bg-white text-gray-500 hover:bg-slate-50'
                   }`}
                 >
@@ -164,13 +164,13 @@ export default function BookingModal({
                     !clinic.hasHomeVisit ? 'opacity-40 cursor-not-allowed' : ''
                   } ${
                     type === 'home_visit'
-                      ? 'border-[#FF914D] bg-orange-50/70 text-[#FF914D]'
+                      ? 'border-[#58B368] bg-green-50/70 text-[#58B368]'
                       : 'border-slate-200 bg-white text-gray-500 hover:bg-slate-50'
                   }`}
                 >
                   🏠 Doctor Home Visit
                   {!clinic.hasHomeVisit && (
-                    <span className="absolute -top-1.5 right-1 bg-red-100 text-red-600 font-bold text-[8px] px-1 rounded">Unavailable</span>
+                    <span className="absolute -top-1.5 right-1 bg-emerald-100 text-emerald-600 font-bold text-[8px] px-1 rounded">Unavailable</span>
                   )}
                 </button>
               </div>
@@ -186,7 +186,7 @@ export default function BookingModal({
                   placeholder="e.g. Coco / Leo"
                   value={petName}
                   onChange={(e) => setPetName(e.target.value)}
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF914D]"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#58B368]"
                 />
               </div>
 
@@ -195,7 +195,7 @@ export default function BookingModal({
                 <select
                   value={petType}
                   onChange={(e) => setPetType(e.target.value)}
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF914D] h-[46px]"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#58B368] h-[46px]"
                 >
                   <option value="Dog">🐶 Dog</option>
                   <option value="Cat">🐱 Cat</option>
@@ -212,7 +212,7 @@ export default function BookingModal({
               <select
                 value={service}
                 onChange={(e) => setService(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF914D]"
+                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#58B368]"
               >
                 {clinic.services.map((serv) => (
                   <option key={serv} value={serv}>{serv}</option>
@@ -230,7 +230,7 @@ export default function BookingModal({
                   min={new Date().toISOString().split('T')[0]}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF914D] h-[46px]"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#58B368] h-[46px]"
                 />
               </div>
 
@@ -239,7 +239,7 @@ export default function BookingModal({
                 <select
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF914D] h-[46px]"
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#58B368] h-[46px]"
                 >
                   {timeslots.map((slot) => (
                     <option key={slot} value={slot}>{slot}</option>
@@ -256,7 +256,7 @@ export default function BookingModal({
                 placeholder="Describe pet behavior, medical history notes, or instructions for the veterinarian..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#FF914D]"
+                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#58B368]"
               />
             </div>
 
@@ -264,7 +264,7 @@ export default function BookingModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#FF914D] hover:bg-orange-600 active:scale-95 text-white font-extrabold text-sm rounded-xl transition-all shadow-md mt-2 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 bg-[#58B368] hover:bg-green-600 active:scale-95 text-white font-extrabold text-sm rounded-xl transition-all shadow-md mt-2 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {loading ? 'Submitting Details...' : 'Confirm Appointment Reservation'}
               <ChevronRight className="w-4 h-4" />
@@ -275,3 +275,4 @@ export default function BookingModal({
     </div>
   );
 }
+

@@ -100,9 +100,9 @@ export default function InteractiveMap({
     // Draw selection Radius Circle around user
     radiusCircleRef.current = L.circle([userLocation.lat, userLocation.lng], {
       radius: searchRadius * 1000, // converted to meters
-      color: '#FF914D',
-      fillColor: '#FF914D',
-      fillOpacity: 0.06,
+      color: '#58B368',
+      fillColor: '#BFE7C4',
+      fillOpacity: 0.12,
       weight: 1,
       dashArray: '5, 5',
     }).addTo(map);
@@ -125,8 +125,8 @@ export default function InteractiveMap({
 
       // Custom HTML Marker using Tailwinds colors
       const iconColor = isSelected 
-        ? '#FF914D' 
-        : (isEmergency ? '#EF4444' : '#4CAF50');
+        ? '#58B368' 
+        : (isEmergency ? '#2F855A' : '#7BCB83');
 
       const markerHtml = `
         <div class="flex flex-col items-center justify-center transition-transform hover:scale-110" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.15));">
@@ -160,14 +160,14 @@ export default function InteractiveMap({
           <h4 class="font-bold text-sm font-display text-gray-900">${clinic.name}</h4>
           <p class="text-xs text-gray-500 mt-1">${clinic.area}</p>
           <div class="flex items-center gap-1 mt-1.5">
-            <span class="text-[#FFD54F]">★</span>
+            <span class="text-[#8BCF8F]">★</span>
             <span class="text-xs font-bold text-gray-800">${clinic.rating}</span>
             <span class="text-gray-400">(${clinic.reviewsCount})</span>
           </div>
-          <p class="text-xs mt-1 font-semibold ${clinic.isOpenNow ? 'text-green-600' : 'text-red-500'}">
+          <p class="text-xs mt-1 font-semibold ${clinic.isOpenNow ? 'text-green-600' : 'text-emerald-700'}">
             ${clinic.isOpenNow ? '● Open Now' : '● Closed'}
           </p>
-          ${clinic.hasEmergency ? '<span class="inline-block bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded mt-1.5">Emergency Unit</span>' : ''}
+          ${clinic.hasEmergency ? '<span class="inline-block bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded mt-1.5">Emergency Unit</span>' : ''}
         </div>
       `);
 
@@ -230,18 +230,18 @@ export default function InteractiveMap({
   }, [navigatingToClinicId, userLocation, clinics]);
 
   return (
-    <div className="relative w-full h-full min-h-[350px] bg-slate-100 rounded-3xl overflow-hidden shadow-custom">
-      <div id="leaflet-map-element" ref={mapContainerRef} className="w-full h-full min-h-[350px]" />
+    <div className="relative w-full h-full min-h-0 bg-slate-100 rounded-3xl overflow-hidden shadow-custom">
+      <div id="leaflet-map-element" ref={mapContainerRef} className="w-full h-full min-h-0" />
       
       {/* Visual Navigation Legend */}
-      <div className="absolute bottom-4 left-4 z-[999] bg-white/95 backdrop-blur-sm p-3 rounded-xl border border-orange-100 shadow-lg text-xs flex flex-col gap-1.5 pointer-events-none">
+      <div className="absolute bottom-4 left-4 z-[999] bg-white/95 backdrop-blur-sm p-3 rounded-xl border border-green-100 shadow-lg text-xs flex flex-col gap-1.5 pointer-events-none">
         <label className="font-bold text-gray-700 font-display">Map Legend</label>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-[#4CAF50]" />
+          <span className="w-3 h-3 rounded-full bg-[#7BCB83]" />
           <span>Regular Clinic</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-red-500" />
+          <span className="w-3 h-3 rounded-full bg-[#2F855A]" />
           <span>Emergency Vet Clinic</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -252,3 +252,4 @@ export default function InteractiveMap({
     </div>
   );
 }
+
