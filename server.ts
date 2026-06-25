@@ -1,31 +1,30 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { INITIAL_CLINICS, INITIAL_REVIEWS } from './src/data.js';
 import { VetClinic, ClinicReview, Booking, EmergencyRequest, User, Pet } from './src/types.js';
+import { signToken } from './src/server/jwt.js';
+import { authenticateToken, requireRole } from './src/server/middleware.js';
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 
+// --- Utility Helpers ---
+
 function normalizeEmail(email: unknown): string {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
 function parseOptionalNumber(value: unknown, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '') {
     const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
+    if (Number.isFinite(parsed)) return parsed;
   }
-
   return fallback;
 }
 
@@ -37,11 +36,19 @@ function sortNewestFirst<T extends { createdAt?: string; date?: string }>(items:
   });
 }
 
-// Persistent database file setup inside the container
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('FATAL: JWT_SECRET environment variable is not configured.');
+  }
+  return secret;
+}
+
+// --- Persistent Database ---
+
 const DB_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'db.json');
 
-// Memory Database Store
 let db: {
   clinics: VetClinic[];
   reviews: ClinicReview[];
@@ -58,7 +65,7 @@ let db: {
   userPrivateData: {}
 };
 
-// Seed default accounts to make testing immediate and frictionless
+// Default seed accounts for immediate demo usage
 const DEFAULT_ACCOUNTS = [
   {
     user: {
@@ -116,7 +123,6 @@ function initDB() {
     if (fs.existsSync(DB_FILE)) {
       const saved = fs.readFileSync(DB_FILE, 'utf-8');
       const loaded = JSON.parse(saved);
-      // Merge with default values if loaded fields are missing
       db.clinics = loaded.clinics || [...INITIAL_CLINICS];
       db.reviews = loaded.reviews || [...INITIAL_REVIEWS];
       db.bookings = loaded.bookings || [];
@@ -124,7 +130,6 @@ function initDB() {
       db.users = loaded.users || [];
       db.userPrivateData = loaded.userPrivateData || {};
     } else {
-      // Create defaults
       db.clinics = [...INITIAL_CLINICS];
       db.reviews = [...INITIAL_REVIEWS];
       db.bookings = [
@@ -165,8 +170,7 @@ function initDB() {
           createdAt: new Date().toISOString()
         }
       ];
-      
-      // Inject seed users
+
       for (const item of DEFAULT_ACCOUNTS) {
         db.users.push(item.user);
         db.userPrivateData[item.user.email] = { passwordHash: item.password };
@@ -186,12 +190,13 @@ function saveDB() {
   }
 }
 
-// Ensure database is initialized
 initDB();
 
-// API ROUTES
+// ========================
+// PUBLIC API ROUTES (No auth required)
+// ========================
 
-// AUTHENTICATION ENDPOINTS
+// AUTHENTICATION ENDPOINTS (Public)
 app.post('/api/auth/signup', (req, res) => {
   const { email, name, password, role, phone, clinicId } = req.body;
   if (!email || !name || !password || !role) {
@@ -214,7 +219,7 @@ app.post('/api/auth/signup', (req, res) => {
   const id = `user-${Date.now()}`;
   const newUser: User = {
     id,
-    email: email.toLowerCase(),
+    email: normalizedEmail,
     name,
     role,
     phone: phone || '',
@@ -229,8 +234,12 @@ app.post('/api/auth/signup', (req, res) => {
   db.userPrivateData[normalizedEmail] = { passwordHash: password };
   saveDB();
 
-  // Create JWT-style simulated token return
-  const token = `mock-jwt-token-for-${id}-${Date.now()}`;
+  // Sign a real JWT token
+  const token = signToken(
+    { id: newUser.id, email: normalizedEmail, role: newUser.role, clinicId: newUser.clinicId },
+    getJwtSecret()
+  );
+
   res.status(201).json({ user: newUser, token });
 });
 
@@ -250,7 +259,12 @@ app.post('/api/auth/login', (req, res) => {
     return;
   }
 
-  const token = `mock-jwt-token-for-${user.id}-${Date.now()}`;
+  // Sign a real JWT token
+  const token = signToken(
+    { id: user.id, email: normalizedEmail, role: user.role, clinicId: user.clinicId },
+    getJwtSecret()
+  );
+
   res.json({ user, token });
 });
 
@@ -273,14 +287,25 @@ app.post('/api/auth/reset-password', (req, res) => {
   res.json({ message: 'Password updated successfully.' });
 });
 
-// CLINICS ENDPOINTS
+// CLINICS - Public read, authenticated write
 app.get('/api/clinics', (req, res) => {
   res.json(db.clinics);
 });
 
-app.post('/api/clinics', (req, res) => {
+// REVIEWS - Public read
+app.get('/api/clinics/:id/reviews', (req, res) => {
+  const clinicReviews = db.reviews.filter(r => r.clinicId === req.params.id);
+  res.json(clinicReviews);
+});
+
+// ========================
+// PROTECTED API ROUTES (JWT auth required)
+// ========================
+
+// CLINICS - Create new clinic (authenticated)
+app.post('/api/clinics', authenticateToken, (req: any, res: any) => {
   const { name, description, address, area, city, latitude, longitude, phone, specialists, hasEmergency, hasHomeVisit, workingHours, services, imageUrl } = req.body;
-  
+
   if (!name || !address || !area || !phone) {
     res.status(400).json({ error: 'Missing key details (Name, Address, Area, and Phone number).' });
     return;
@@ -297,7 +322,7 @@ app.post('/api/clinics', (req, res) => {
     latitude: parseOptionalNumber(latitude, 12.9716),
     longitude: parseOptionalNumber(longitude, 77.5946),
     phone,
-    rating: 5.0, // Initial perfect rating
+    rating: 5.0,
     reviewsCount: 1,
     imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600',
     specialists: specialists || ['Dog', 'Cat'],
@@ -313,17 +338,12 @@ app.post('/api/clinics', (req, res) => {
   res.status(201).json(newClinic);
 });
 
-// REVIEWS ENDPOINTS
-app.get('/api/clinics/:id/reviews', (req, res) => {
-  const clinicReviews = db.reviews.filter(r => r.clinicId === req.params.id);
-  res.json(clinicReviews);
-});
-
-app.post('/api/clinics/:id/reviews', (req, res) => {
-  const { userName, userEmail, petType, rating, reviewText } = req.body;
+// REVIEWS - Create new review (authenticated)
+app.post('/api/clinics/:id/reviews', authenticateToken, (req: any, res: any) => {
+  const { rating, reviewText, petType } = req.body;
   const clinicId = req.params.id;
 
-  if (!userName || !rating || !reviewText) {
+  if (!rating || !reviewText) {
     res.status(400).json({ error: 'Rating and review comment are required.' });
     return;
   }
@@ -331,8 +351,8 @@ app.post('/api/clinics/:id/reviews', (req, res) => {
   const newReview: ClinicReview = {
     id: `rev-${Date.now()}`,
     clinicId,
-    userName,
-    userEmail: userEmail || 'anonymous@gmail.com',
+    userName: req.user!.email ? db.users.find(u => normalizeEmail(u.email) === req.user!.email)?.name || 'Anonymous' : 'Anonymous',
+    userEmail: req.user!.email,
     petType: petType || 'Pet',
     rating: parseInt(rating),
     reviewText,
@@ -355,27 +375,28 @@ app.post('/api/clinics/:id/reviews', (req, res) => {
   res.status(201).json(newReview);
 });
 
-// BOOKINGS ENDPOINTS
-app.get('/api/bookings', (req, res) => {
-  const { email, clinicId } = req.query;
-  let filtered = db.bookings;
+// BOOKINGS - Secured with tenant isolation
+app.get('/api/bookings', authenticateToken, (req: any, res: any) => {
+  const user = req.user!;
 
-  if (email) {
-    const normalizedEmail = normalizeEmail(email);
-    filtered = filtered.filter(b => normalizeEmail(b.petOwnerEmail) === normalizedEmail);
+  if (user.role === 'veterinarian') {
+    // Vet sees only bookings for their clinic
+    const clinicBookings = db.bookings.filter(b => b.clinicId === user.clinicId);
+    return res.json(sortNewestFirst(clinicBookings));
+  } else {
+    // Pet owner sees only their own bookings
+    const userBookings = db.bookings.filter(b => normalizeEmail(b.petOwnerEmail) === user.email);
+    return res.json(sortNewestFirst(userBookings));
   }
-  if (clinicId) {
-    filtered = filtered.filter(b => b.clinicId === clinicId);
-  }
-
-  res.json(sortNewestFirst(filtered));
 });
 
-app.post('/api/bookings', (req, res) => {
-  const { clinicId, clinicName, petOwnerName, petOwnerEmail, petName, petType, service, date, time, type, notes } = req.body;
+app.post('/api/bookings', authenticateToken, (req: any, res: any) => {
+  const { clinicId, clinicName, petName, petType, service, date, time, type, notes } = req.body;
+  const user = req.user!;
+  const fullUser = db.users.find(u => normalizeEmail(u.email) === user.email);
 
-  if (!clinicId || !petOwnerEmail || !petName || !date || !time) {
-    res.status(400).json({ error: 'Missing essential booking credentials (date, time, pet name).' });
+  if (!clinicId || !petName || !date || !time) {
+    res.status(400).json({ error: 'Missing essential booking credentials (clinicId, pet name, date, time).' });
     return;
   }
 
@@ -383,8 +404,8 @@ app.post('/api/bookings', (req, res) => {
     id: `booking-${Date.now()}`,
     clinicId,
     clinicName: clinicName || 'Veterinary Clinic',
-    petOwnerName: petOwnerName || 'Pet Parent',
-    petOwnerEmail: normalizeEmail(petOwnerEmail),
+    petOwnerName: fullUser?.name || 'Pet Parent',
+    petOwnerEmail: user.email,
     petName,
     petType: petType || 'Dog',
     service: service || 'General Consultation',
@@ -401,8 +422,8 @@ app.post('/api/bookings', (req, res) => {
   res.status(201).json(newBooking);
 });
 
-app.post('/api/bookings/:id/status', (req, res) => {
-  const { status } = req.body; // 'approved' | 'completed' | 'cancelled'
+app.post('/api/bookings/:id/status', authenticateToken, requireRole('veterinarian'), (req: any, res: any) => {
+  const { status } = req.body;
   const { id } = req.params;
 
   const bIndex = db.bookings.findIndex(b => b.id === id);
@@ -411,18 +432,35 @@ app.post('/api/bookings/:id/status', (req, res) => {
     return;
   }
 
+  // Vets can only update bookings for their own clinic
+  if (db.bookings[bIndex].clinicId !== req.user!.clinicId) {
+    res.status(403).json({ error: 'You can only manage bookings for your own clinic.' });
+    return;
+  }
+
   db.bookings[bIndex].status = status;
   saveDB();
   res.json(db.bookings[bIndex]);
 });
 
-// EMERGENCY ASSISTANCE ENDPOINTS
-app.get('/api/emergency', (req, res) => {
-  res.json(sortNewestFirst(db.emergencies));
+// EMERGENCY ASSISTANCE - Authenticated
+app.get('/api/emergency', authenticateToken, (req: any, res: any) => {
+  const user = req.user!;
+
+  if (user.role === 'veterinarian') {
+    // Vets see all active emergencies (for dispatching)
+    return res.json(sortNewestFirst(db.emergencies));
+  } else {
+    // Pet owners see only their own emergency requests
+    const userEmergencies = db.emergencies.filter(e => normalizeEmail(e.petOwnerEmail) === user.email);
+    return res.json(sortNewestFirst(userEmergencies));
+  }
 });
 
-app.post('/api/emergency', (req, res) => {
-  const { petOwnerName, petOwnerEmail, petName, petType, phone, address, description, latitude, longitude } = req.body;
+app.post('/api/emergency', authenticateToken, (req: any, res: any) => {
+  const { petName, petType, phone, address, description, latitude, longitude } = req.body;
+  const user = req.user!;
+  const fullUser = db.users.find(u => normalizeEmail(u.email) === user.email);
 
   if (!phone || !address || !description) {
     res.status(400).json({ error: 'Emergency request needs phone number, location address, and symptom description.' });
@@ -431,8 +469,8 @@ app.post('/api/emergency', (req, res) => {
 
   const newEmergency: EmergencyRequest = {
     id: `emergency-${Date.now()}`,
-    petOwnerName: petOwnerName || 'Urgent Caller',
-    petOwnerEmail: petOwnerEmail || 'emergency-guest@quickvet.in',
+    petOwnerName: fullUser?.name || 'Urgent Caller',
+    petOwnerEmail: user.email,
     petName: petName || 'Unknown Pet',
     petType: petType || 'Dog',
     phone,
@@ -451,8 +489,8 @@ app.post('/api/emergency', (req, res) => {
   res.status(201).json(newEmergency);
 });
 
-app.post('/api/emergency/:id/status', (req, res) => {
-  const { status, clinicId, clinicName } = req.body; // 'notified' | 'accepted' | 'completed'
+app.post('/api/emergency/:id/status', authenticateToken, requireRole('veterinarian'), (req: any, res: any) => {
+  const { status, clinicId, clinicName } = req.body;
   const { id } = req.params;
 
   const eIndex = db.emergencies.findIndex(e => e.id === id);
@@ -469,16 +507,17 @@ app.post('/api/emergency/:id/status', (req, res) => {
   res.json(db.emergencies[eIndex]);
 });
 
-// USER FAVORITES AND PET MANAGEMENT
-app.post('/api/user/favorites', (req, res) => {
-  const { email, clinicId } = req.body;
-  if (!email || !clinicId) {
-    res.status(400).json({ error: 'Email and clinicId are required.' });
+// USER FAVORITES AND PET MANAGEMENT - Authenticated
+app.post('/api/user/favorites', authenticateToken, (req: any, res: any) => {
+  const { clinicId } = req.body;
+  const user = req.user!;
+
+  if (!clinicId) {
+    res.status(400).json({ error: 'clinicId is required.' });
     return;
   }
 
-  const normalizedEmail = normalizeEmail(email);
-  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === normalizedEmail);
+  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === user.email);
   if (uIndex === -1) {
     res.status(404).json({ error: 'User profile not found.' });
     return;
@@ -497,15 +536,16 @@ app.post('/api/user/favorites', (req, res) => {
   res.json({ favoriteClinics: db.users[uIndex].favoriteClinics });
 });
 
-app.post('/api/user/pets', (req, res) => {
-  const { email, name, type, breed, age, weight, medicalHistory } = req.body;
-  if (!email || !name || !type) {
-    res.status(400).json({ error: 'E-mail, Name, and species Type are required to add a pet.' });
+app.post('/api/user/pets', authenticateToken, (req: any, res: any) => {
+  const { name, type, breed, age, weight, medicalHistory } = req.body;
+  const user = req.user!;
+
+  if (!name || !type) {
+    res.status(400).json({ error: 'Name and species Type are required to add a pet.' });
     return;
   }
 
-  const normalizedEmail = normalizeEmail(email);
-  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === normalizedEmail);
+  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === user.email);
   if (uIndex === -1) {
     res.status(404).json({ error: 'User account not found.' });
     return;
@@ -528,7 +568,23 @@ app.post('/api/user/pets', (req, res) => {
   res.status(201).json(db.users[uIndex]);
 });
 
-// VITE MIDDLEWARE SETUP FOR DEV VS PRODUCTION
+// GET current user profile (authenticated) - used to refresh user state
+app.get('/api/user/me', authenticateToken, (req: any, res: any) => {
+  const user = req.user!;
+  const fullUser = db.users.find(u => normalizeEmail(u.email) === user.email);
+
+  if (!fullUser) {
+    res.status(404).json({ error: 'User not found.' });
+    return;
+  }
+
+  res.json(fullUser);
+});
+
+// ========================
+// VITE MIDDLEWARE SETUP
+// ========================
+
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

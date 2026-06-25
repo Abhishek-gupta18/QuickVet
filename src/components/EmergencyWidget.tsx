@@ -92,9 +92,13 @@ export default function EmergencyWidget({
         longitude: 77.5946
       };
 
+      const token = localStorage.getItem('vetfinder_token');
       const res = await fetch('/api/emergency', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
 
