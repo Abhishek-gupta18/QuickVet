@@ -1,10 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
-import { INITIAL_CLINICS, INITIAL_REVIEWS } from './src/data.js';
-import { VetClinic, ClinicReview, Booking, EmergencyRequest, User, Pet } from './src/types.js';
+import bcrypt from 'bcryptjs';
+import { eq, desc, and, sql } from 'drizzle-orm';
+import { db, testConnection, closePool } from './src/server/db.js';
+import {
+  vetClinics, users, pets, favoriteClinics,
+  clinicReviews, bookings, emergencyRequests,
+} from './src/server/schema.js';
 import { signToken } from './src/server/jwt.js';
 import { authenticateToken, requireRole } from './src/server/middleware.js';
 
@@ -13,579 +17,564 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// --- Utility Helpers ---
+// Ensure all API routes return JSON content-type (prevent Vite SPA fallback confusion)
+app.use('/api', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
 
+// --- Utility Helpers ---
 function normalizeEmail(email: unknown): string {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
-function parseOptionalNumber(value: unknown, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number.parseFloat(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return fallback;
-}
-
-function sortNewestFirst<T extends { createdAt?: string; date?: string }>(items: T[]): T[] {
-  return [...items].sort((left, right) => {
-    const leftTime = new Date(left.createdAt || left.date || 0).getTime();
-    const rightTime = new Date(right.createdAt || right.date || 0).getTime();
-    return rightTime - leftTime;
-  });
-}
-
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new Error('FATAL: JWT_SECRET environment variable is not configured.');
-  }
+  if (!secret) throw new Error('FATAL: JWT_SECRET not configured.');
   return secret;
 }
 
-// --- Persistent Database ---
+function getISTTime(): string {
+  return new Date().toLocaleTimeString('en-IN', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata'
+  });
+}
 
-const DB_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DB_DIR, 'db.json');
+function getISTDate(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
-let db: {
-  clinics: VetClinic[];
-  reviews: ClinicReview[];
-  bookings: Booking[];
-  emergencies: EmergencyRequest[];
-  users: User[];
-  userPrivateData: Record<string, { passwordHash: string }>;
-} = {
-  clinics: [...INITIAL_CLINICS],
-  reviews: [...INITIAL_REVIEWS],
-  bookings: [],
-  emergencies: [],
-  users: [],
-  userPrivateData: {}
-};
 
-// Default seed accounts for immediate demo usage
-const DEFAULT_ACCOUNTS = [
-  {
-    user: {
-      id: 'user-owner',
-      email: 'owner@gmail.com',
-      name: 'Prabal Beas',
-      role: 'pet_owner' as const,
-      phone: '+91 98765 43210',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
-      createdAt: new Date().toISOString(),
-      pets: [
-        {
-          id: 'pet-1',
-          name: 'Coco',
-          type: 'Dog',
-          breed: 'Golden Retriever',
-          age: 3,
-          weight: '28kg',
-          medicalHistory: ['Regular Deworming', 'Rabies vaccine - Booster done in Mar 2026']
-        },
-        {
-          id: 'pet-2',
-          name: 'Luna',
-          type: 'Cat',
-          breed: 'Indie Feral',
-          age: 1,
-          weight: '4.2kg',
-          medicalHistory: ['Vaccination complete']
-        }
-      ],
-      favoriteClinics: ['clinic-1']
-    },
-    password: 'password'
-  },
-  {
-    user: {
-      id: 'user-vet',
-      email: 'vet@gmail.com',
-      name: 'Dr. Ramesh Roy',
-      role: 'veterinarian' as const,
-      phone: '+91 99887 76655',
-      avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150',
-      createdAt: new Date().toISOString(),
-      clinicId: 'clinic-1'
-    },
-    password: 'password'
-  }
-];
+// ========================
+// PUBLIC API ROUTES
+// ========================
 
-function initDB() {
+// AUTH: Sign Up
+app.post('/api/auth/signup', async (req, res) => {
   try {
-    if (!fs.existsSync(DB_DIR)) {
-      fs.mkdirSync(DB_DIR, { recursive: true });
+    const { email, name, password, role, phone, clinicId } = req.body;
+    if (!email || !name || !password || !role) {
+      return res.status(400).json({ error: 'Missing required signup parameters.' });
     }
-    if (fs.existsSync(DB_FILE)) {
-      const saved = fs.readFileSync(DB_FILE, 'utf-8');
-      const loaded = JSON.parse(saved);
-      db.clinics = loaded.clinics || [...INITIAL_CLINICS];
-      db.reviews = loaded.reviews || [...INITIAL_REVIEWS];
-      db.bookings = loaded.bookings || [];
-      db.emergencies = loaded.emergencies || [];
-      db.users = loaded.users || [];
-      db.userPrivateData = loaded.userPrivateData || {};
+    if (role === 'veterinarian' && !clinicId) {
+      return res.status(400).json({ error: 'Clinic ID is required for veterinarian signups.' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const existing = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Email already registered. Please login.' });
+    }
+
+    const id = `user-${Date.now()}`;
+    const passwordHash = await bcrypt.hash(password, 10);
+    const avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`;
+
+    const [newUser] = await db.insert(users).values({
+      id, email: normalizedEmail, passwordHash, name, role,
+      phone: phone || '', avatarUrl,
+      clinicId: role === 'veterinarian' ? clinicId : null,
+    }).returning();
+
+    const token = signToken(
+      { id: newUser.id, email: normalizedEmail, role: newUser.role, clinicId: newUser.clinicId || undefined },
+      getJwtSecret()
+    );
+
+    // Build user response (exclude passwordHash)
+    const userResponse = await buildUserResponse(newUser.id);
+    res.status(201).json({ user: userResponse, token });
+  } catch (err: any) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Internal server error during signup.' });
+  }
+});
+
+
+// AUTH: Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    const token = signToken(
+      { id: user.id, email: normalizedEmail, role: user.role, clinicId: user.clinicId || undefined },
+      getJwtSecret()
+    );
+
+    const userResponse = await buildUserResponse(user.id);
+    res.json({ user: userResponse, token });
+  } catch (err: any) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Internal server error during login.' });
+  }
+});
+
+// AUTH: Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: 'Email and new password are required.' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
+    if (!user) {
+      return res.status(404).json({ error: 'User does not exist with that email address.' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, user.id));
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err: any) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+
+// CLINICS: Public read
+app.get('/api/clinics', async (_req, res) => {
+  try {
+    const allClinics = await db.select().from(vetClinics);
+    // Map to frontend-compatible format
+    const mapped = allClinics.map(c => ({
+      id: c.id, name: c.name, description: c.description,
+      address: c.address, area: c.area, city: c.city,
+      latitude: c.latitude, longitude: c.longitude,
+      phone: c.phone, rating: parseFloat(c.rating || '0'),
+      reviewsCount: c.reviewsCount || 0, imageUrl: c.imageUrl,
+      specialists: c.specialists, hasEmergency: c.hasEmergency,
+      hasHomeVisit: c.hasHomeVisit, isOpenNow: c.isOpenNow,
+      workingHours: c.workingHours, services: c.services,
+    }));
+    res.json(mapped);
+  } catch (err: any) {
+    console.error('Get clinics error:', err);
+    res.status(500).json({ error: 'Failed to fetch clinics.' });
+  }
+});
+
+// REVIEWS: Public read
+app.get('/api/clinics/:id/reviews', async (req, res) => {
+  try {
+    const reviews = await db.select().from(clinicReviews)
+      .where(eq(clinicReviews.clinicId, req.params.id))
+      .orderBy(desc(clinicReviews.createdAt));
+    const mapped = reviews.map(r => ({
+      id: r.id, clinicId: r.clinicId, userName: r.userName,
+      userEmail: r.userEmail, petType: r.petType,
+      rating: r.rating, reviewText: r.reviewText,
+      date: r.createdAt ? r.createdAt.toISOString().split('T')[0] : getISTDate(),
+    }));
+    res.json(mapped);
+  } catch (err: any) {
+    console.error('Get reviews error:', err);
+    res.status(500).json({ error: 'Failed to fetch reviews.' });
+  }
+});
+
+
+// ========================
+// PROTECTED API ROUTES (JWT required)
+// ========================
+
+// CLINICS: Create (authenticated)
+app.post('/api/clinics', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { name, description, address, area, city, latitude, longitude, phone, specialists, hasEmergency, hasHomeVisit, workingHours, services, imageUrl } = req.body;
+    if (!name || !address || !area || !phone) {
+      return res.status(400).json({ error: 'Missing key details (Name, Address, Area, Phone).' });
+    }
+
+    const id = `clinic-${Date.now()}`;
+    const [newClinic] = await db.insert(vetClinics).values({
+      id, name,
+      description: description || 'Professional veterinary clinic.',
+      address, area, city: city || 'Bengaluru',
+      latitude: parseFloat(latitude) || 12.9716,
+      longitude: parseFloat(longitude) || 77.5946,
+      phone, rating: '5.00', reviewsCount: 0,
+      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600',
+      specialists: specialists || ['Dog', 'Cat'],
+      hasEmergency: hasEmergency || false,
+      hasHomeVisit: hasHomeVisit || false,
+      isOpenNow: true,
+      workingHours: workingHours || '9:00 AM - 8:00 PM',
+      services: services || ['General Consultations', 'Vaccination', 'Pharmacy'],
+    }).returning();
+
+    res.status(201).json({
+      ...newClinic,
+      rating: parseFloat(newClinic.rating || '5'),
+      reviewsCount: newClinic.reviewsCount || 0,
+    });
+  } catch (err: any) {
+    console.error('Create clinic error:', err);
+    res.status(500).json({ error: 'Failed to create clinic.' });
+  }
+});
+
+
+// REVIEWS: Create (authenticated)
+app.post('/api/clinics/:id/reviews', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { rating, reviewText, petType } = req.body;
+    const clinicId = req.params.id;
+    if (!rating || !reviewText) {
+      return res.status(400).json({ error: 'Rating and review comment are required.' });
+    }
+
+    const [reviewer] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+    const id = `rev-${Date.now()}`;
+
+    await db.insert(clinicReviews).values({
+      id, clinicId,
+      userName: reviewer?.name || 'Anonymous',
+      userEmail: req.user.email,
+      petType: petType || 'Pet',
+      rating: parseInt(rating),
+      reviewText,
+    });
+
+    // Recalculate average rating
+    const allReviews = await db.select().from(clinicReviews).where(eq(clinicReviews.clinicId, clinicId));
+    const sum = allReviews.reduce((acc, r) => acc + r.rating, 0);
+    const avg = (sum / allReviews.length).toFixed(2);
+
+    await db.update(vetClinics).set({
+      rating: avg, reviewsCount: allReviews.length,
+    }).where(eq(vetClinics.id, clinicId));
+
+    res.status(201).json({
+      id, clinicId, userName: reviewer?.name || 'Anonymous',
+      userEmail: req.user.email, petType: petType || 'Pet',
+      rating: parseInt(rating), reviewText, date: getISTDate(),
+    });
+  } catch (err: any) {
+    console.error('Create review error:', err);
+    res.status(500).json({ error: 'Failed to publish review.' });
+  }
+});
+
+
+// BOOKINGS: Get (tenant-isolated)
+app.get('/api/bookings', authenticateToken, async (req: any, res: any) => {
+  try {
+    let results;
+    if (req.user.role === 'veterinarian') {
+      results = await db.select().from(bookings)
+        .where(eq(bookings.clinicId, req.user.clinicId || ''))
+        .orderBy(desc(bookings.createdAt));
     } else {
-      db.clinics = [...INITIAL_CLINICS];
-      db.reviews = [...INITIAL_REVIEWS];
-      db.bookings = [
-        {
-          id: 'booking-seed-1',
-          clinicId: 'clinic-1',
-          clinicName: 'Cessna Lifeline 24x7 Animal Hospital',
-          petOwnerName: 'Prabal Beas',
-          petOwnerEmail: 'owner@gmail.com',
-          petName: 'Coco',
-          petType: 'Dog',
-          service: 'General Checkup',
-          date: '2026-06-10',
-          time: '11:00 AM',
-          status: 'approved',
-          notes: 'Routine checkup and deworming schedule update.',
-          type: 'clinic_visit',
-          createdAt: new Date().toISOString()
-        }
-      ];
-      db.emergencies = [
-        {
-          id: 'emergency-seed-1',
-          petOwnerName: 'Megha Nair',
-          petOwnerEmail: 'megha@gmail.com',
-          petName: 'Rocky',
-          petType: 'Dog',
-          phone: '+91 90088 12345',
-          address: 'Prestige Shantiniketan, Whitefield, Bengaluru',
-          description: 'Dog ate some chocolate wrapper and is throwing up continuously.',
-          latitude: 12.9840,
-          longitude: 77.7289,
-          status: 'completed',
-          acceptedByClinicId: 'clinic-4',
-          acceptedByClinicName: 'Myra Pet Clinic & Vet Surgery Center',
-          date: '2026-06-05',
-          time: '08:42 PM',
-          createdAt: new Date().toISOString()
-        }
-      ];
-
-      for (const item of DEFAULT_ACCOUNTS) {
-        db.users.push(item.user);
-        db.userPrivateData[item.user.email] = { passwordHash: item.password };
-      }
-      saveDB();
+      results = await db.select().from(bookings)
+        .where(eq(bookings.petOwnerEmail, req.user.email))
+        .orderBy(desc(bookings.createdAt));
     }
-  } catch (err) {
-    console.warn('DB initialization error, falling back to pure in-memory store:', err);
-  }
-}
 
-function saveDB() {
+    const mapped = results.map(b => ({
+      id: b.id, clinicId: b.clinicId, clinicName: b.clinicName,
+      petOwnerName: b.petOwnerName, petOwnerEmail: b.petOwnerEmail,
+      petName: b.petName, petType: b.petType, service: b.service,
+      date: b.bookingDate, time: b.bookingTime, status: b.status,
+      notes: b.notes, type: b.bookingType,
+      createdAt: b.createdAt?.toISOString() || new Date().toISOString(),
+    }));
+    res.json(mapped);
+  } catch (err: any) {
+    console.error('Get bookings error:', err);
+    res.status(500).json({ error: 'Failed to fetch bookings.' });
+  }
+});
+
+// BOOKINGS: Create (authenticated)
+app.post('/api/bookings', authenticateToken, async (req: any, res: any) => {
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to write DB file:', err);
+    const { clinicId, clinicName, petName, petType, service, date, time, type, notes } = req.body;
+    if (!clinicId || !petName || !date || !time) {
+      return res.status(400).json({ error: 'Missing essential booking fields.' });
+    }
+
+    const [owner] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+    const id = `booking-${Date.now()}`;
+
+    const [newBooking] = await db.insert(bookings).values({
+      id, clinicId, clinicName: clinicName || 'Veterinary Clinic',
+      petOwnerId: req.user.id,
+      petOwnerName: owner?.name || 'Pet Parent',
+      petOwnerEmail: req.user.email,
+      petName, petType: petType || 'Dog',
+      service: service || 'General Consultation',
+      bookingDate: date, bookingTime: time,
+      status: 'pending', notes: notes || '',
+      bookingType: type || 'clinic_visit',
+    }).returning();
+
+    res.status(201).json({
+      id: newBooking.id, clinicId: newBooking.clinicId, clinicName: newBooking.clinicName,
+      petOwnerName: newBooking.petOwnerName, petOwnerEmail: newBooking.petOwnerEmail,
+      petName: newBooking.petName, petType: newBooking.petType, service: newBooking.service,
+      date: newBooking.bookingDate, time: newBooking.bookingTime, status: newBooking.status,
+      notes: newBooking.notes, type: newBooking.bookingType,
+      createdAt: newBooking.createdAt?.toISOString() || new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('Create booking error:', err);
+    res.status(500).json({ error: 'Failed to create booking.' });
   }
+});
+
+
+// BOOKINGS: Update status (vet only, clinic-scoped)
+app.post('/api/bookings/:id/status', authenticateToken, requireRole('veterinarian'), async (req: any, res: any) => {
+  try {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
+    if (!booking) return res.status(404).json({ error: 'Booking not found.' });
+    if (booking.clinicId !== req.user.clinicId) {
+      return res.status(403).json({ error: 'You can only manage bookings for your own clinic.' });
+    }
+
+    const [updated] = await db.update(bookings).set({ status }).where(eq(bookings.id, id)).returning();
+    res.json({
+      id: updated.id, clinicId: updated.clinicId, clinicName: updated.clinicName,
+      petOwnerName: updated.petOwnerName, petOwnerEmail: updated.petOwnerEmail,
+      petName: updated.petName, petType: updated.petType, service: updated.service,
+      date: updated.bookingDate, time: updated.bookingTime, status: updated.status,
+      notes: updated.notes, type: updated.bookingType,
+      createdAt: updated.createdAt?.toISOString() || '',
+    });
+  } catch (err: any) {
+    console.error('Update booking status error:', err);
+    res.status(500).json({ error: 'Failed to update booking.' });
+  }
+});
+
+
+// EMERGENCY: Get (tenant-isolated)
+app.get('/api/emergency', authenticateToken, async (req: any, res: any) => {
+  try {
+    let results;
+    if (req.user.role === 'veterinarian') {
+      results = await db.select().from(emergencyRequests).orderBy(desc(emergencyRequests.createdAt));
+    } else {
+      results = await db.select().from(emergencyRequests)
+        .where(eq(emergencyRequests.petOwnerEmail, req.user.email))
+        .orderBy(desc(emergencyRequests.createdAt));
+    }
+
+    const mapped = results.map(e => ({
+      id: e.id, petOwnerName: e.petOwnerName, petOwnerEmail: e.petOwnerEmail,
+      petName: e.petName, petType: e.petType, phone: e.phone,
+      address: e.address, description: e.description,
+      latitude: e.latitude, longitude: e.longitude, status: e.status,
+      acceptedByClinicId: e.acceptedByClinicId,
+      acceptedByClinicName: e.acceptedByClinicName,
+      date: e.requestDate, time: e.requestTime,
+      createdAt: e.createdAt?.toISOString() || new Date().toISOString(),
+    }));
+    res.json(mapped);
+  } catch (err: any) {
+    console.error('Get emergencies error:', err);
+    res.status(500).json({ error: 'Failed to fetch emergencies.' });
+  }
+});
+
+// EMERGENCY: Create (authenticated)
+app.post('/api/emergency', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { petName, petType, phone, address, description, latitude, longitude } = req.body;
+    if (!phone || !address || !description) {
+      return res.status(400).json({ error: 'Emergency needs phone, address, and description.' });
+    }
+
+    const [owner] = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+    const id = `emergency-${Date.now()}`;
+
+    const [newEmergency] = await db.insert(emergencyRequests).values({
+      id, petOwnerId: req.user.id,
+      petOwnerName: owner?.name || 'Urgent Caller',
+      petOwnerEmail: req.user.email,
+      petName: petName || 'Unknown Pet', petType: petType || 'Dog',
+      phone, address, description,
+      latitude: parseFloat(latitude) || 12.9716,
+      longitude: parseFloat(longitude) || 77.5946,
+      status: 'pending',
+      requestDate: getISTDate(), requestTime: getISTTime(),
+    }).returning();
+
+    res.status(201).json({
+      id: newEmergency.id, petOwnerName: newEmergency.petOwnerName,
+      petOwnerEmail: newEmergency.petOwnerEmail,
+      petName: newEmergency.petName, petType: newEmergency.petType,
+      phone: newEmergency.phone, address: newEmergency.address,
+      description: newEmergency.description,
+      latitude: newEmergency.latitude, longitude: newEmergency.longitude,
+      status: newEmergency.status,
+      acceptedByClinicId: newEmergency.acceptedByClinicId,
+      acceptedByClinicName: newEmergency.acceptedByClinicName,
+      date: newEmergency.requestDate, time: newEmergency.requestTime,
+      createdAt: newEmergency.createdAt?.toISOString() || new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error('Create emergency error:', err);
+    res.status(500).json({ error: 'Failed to create emergency request.' });
+  }
+});
+
+
+// EMERGENCY: Update status (vet only)
+app.post('/api/emergency/:id/status', authenticateToken, requireRole('veterinarian'), async (req: any, res: any) => {
+  try {
+    const { status, clinicId, clinicName } = req.body;
+    const { id } = req.params;
+
+    const [emergency] = await db.select().from(emergencyRequests).where(eq(emergencyRequests.id, id)).limit(1);
+    if (!emergency) return res.status(404).json({ error: 'Emergency not found.' });
+
+    const updateData: any = { status };
+    if (clinicId) updateData.acceptedByClinicId = clinicId;
+    if (clinicName) updateData.acceptedByClinicName = clinicName;
+
+    const [updated] = await db.update(emergencyRequests).set(updateData).where(eq(emergencyRequests.id, id)).returning();
+    res.json({
+      id: updated.id, petOwnerName: updated.petOwnerName,
+      petOwnerEmail: updated.petOwnerEmail,
+      petName: updated.petName, petType: updated.petType,
+      phone: updated.phone, address: updated.address,
+      description: updated.description,
+      latitude: updated.latitude, longitude: updated.longitude,
+      status: updated.status,
+      acceptedByClinicId: updated.acceptedByClinicId,
+      acceptedByClinicName: updated.acceptedByClinicName,
+      date: updated.requestDate, time: updated.requestTime,
+      createdAt: updated.createdAt?.toISOString() || '',
+    });
+  } catch (err: any) {
+    console.error('Update emergency error:', err);
+    res.status(500).json({ error: 'Failed to update emergency.' });
+  }
+});
+
+
+// USER: Toggle favorite clinic
+app.post('/api/user/favorites', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { clinicId } = req.body;
+    if (!clinicId) return res.status(400).json({ error: 'clinicId is required.' });
+
+    const existing = await db.select().from(favoriteClinics)
+      .where(and(eq(favoriteClinics.userId, req.user.id), eq(favoriteClinics.clinicId, clinicId)))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db.delete(favoriteClinics)
+        .where(and(eq(favoriteClinics.userId, req.user.id), eq(favoriteClinics.clinicId, clinicId)));
+    } else {
+      await db.insert(favoriteClinics).values({ userId: req.user.id, clinicId });
+    }
+
+    const allFavs = await db.select().from(favoriteClinics).where(eq(favoriteClinics.userId, req.user.id));
+    res.json({ favoriteClinics: allFavs.map(f => f.clinicId) });
+  } catch (err: any) {
+    console.error('Toggle favorite error:', err);
+    res.status(500).json({ error: 'Failed to toggle favorite.' });
+  }
+});
+
+// USER: Add pet
+app.post('/api/user/pets', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { name, type, breed, age, weight, medicalHistory } = req.body;
+    if (!name || !type) {
+      return res.status(400).json({ error: 'Name and type are required.' });
+    }
+
+    const id = `pet-${Date.now()}`;
+    await db.insert(pets).values({
+      id, ownerId: req.user.id, name, type,
+      breed: breed || 'Indie / Mix',
+      age: age ? parseInt(age) : null,
+      weight: weight || '',
+      medicalHistory: medicalHistory ? [medicalHistory] : [],
+    });
+
+    // Return full updated user profile
+    const userResponse = await buildUserResponse(req.user.id);
+    res.status(201).json(userResponse);
+  } catch (err: any) {
+    console.error('Add pet error:', err);
+    res.status(500).json({ error: 'Failed to add pet.' });
+  }
+});
+
+// USER: Get current profile
+app.get('/api/user/me', authenticateToken, async (req: any, res: any) => {
+  try {
+    const userResponse = await buildUserResponse(req.user.id);
+    if (!userResponse) return res.status(404).json({ error: 'User not found.' });
+    res.json(userResponse);
+  } catch (err: any) {
+    console.error('Get user error:', err);
+    res.status(500).json({ error: 'Failed to fetch user.' });
+  }
+});
+
+
+// ========================
+// HELPER: Build user response with pets & favorites (no passwordHash)
+// ========================
+async function buildUserResponse(userId: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return null;
+
+  const userPets = await db.select().from(pets).where(eq(pets.ownerId, userId));
+  const userFavs = await db.select().from(favoriteClinics).where(eq(favoriteClinics.userId, userId));
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    phone: user.phone || '',
+    avatarUrl: user.avatarUrl || '',
+    createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+    clinicId: user.clinicId || undefined,
+    pets: userPets.map(p => ({
+      id: p.id, name: p.name, type: p.type,
+      breed: p.breed || undefined, age: p.age || undefined,
+      weight: p.weight || undefined, medicalHistory: p.medicalHistory || [],
+    })),
+    favoriteClinics: userFavs.map(f => f.clinicId),
+  };
 }
 
-initDB();
-
 // ========================
-// PUBLIC API ROUTES (No auth required)
+// VITE MIDDLEWARE & SERVER START
 // ========================
-
-// AUTHENTICATION ENDPOINTS (Public)
-app.post('/api/auth/signup', (req, res) => {
-  const { email, name, password, role, phone, clinicId } = req.body;
-  if (!email || !name || !password || !role) {
-    res.status(400).json({ error: 'Missing required signup parameters.' });
-    return;
-  }
-
-  if (role === 'veterinarian' && !clinicId) {
-    res.status(400).json({ error: 'Clinic ID is required for veterinarian signups.' });
-    return;
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  const existing = db.users.find(u => normalizeEmail(u.email) === normalizedEmail);
-  if (existing) {
-    res.status(400).json({ error: 'Email already registered. Please login.' });
-    return;
-  }
-
-  const id = `user-${Date.now()}`;
-  const newUser: User = {
-    id,
-    email: normalizedEmail,
-    name,
-    role,
-    phone: phone || '',
-    avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
-    createdAt: new Date().toISOString(),
-    pets: role === 'pet_owner' ? [] : undefined,
-    favoriteClinics: role === 'pet_owner' ? [] : undefined,
-    clinicId: role === 'veterinarian' ? clinicId : undefined
-  };
-
-  db.users.push(newUser);
-  db.userPrivateData[normalizedEmail] = { passwordHash: password };
-  saveDB();
-
-  // Sign a real JWT token
-  const token = signToken(
-    { id: newUser.id, email: normalizedEmail, role: newUser.role, clinicId: newUser.clinicId },
-    getJwtSecret()
-  );
-
-  res.status(201).json({ user: newUser, token });
-});
-
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    res.status(400).json({ error: 'Email and password are required.' });
-    return;
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  const user = db.users.find(u => normalizeEmail(u.email) === normalizedEmail);
-  const privateData = db.userPrivateData[normalizedEmail];
-
-  if (!user || !privateData || privateData.passwordHash !== password) {
-    res.status(401).json({ error: 'Invalid email or password.' });
-    return;
-  }
-
-  // Sign a real JWT token
-  const token = signToken(
-    { id: user.id, email: normalizedEmail, role: user.role, clinicId: user.clinicId },
-    getJwtSecret()
-  );
-
-  res.json({ user, token });
-});
-
-app.post('/api/auth/reset-password', (req, res) => {
-  const { email, newPassword } = req.body;
-  if (!email || !newPassword) {
-    res.status(400).json({ error: 'Email and new password are required.' });
-    return;
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  const privateData = db.userPrivateData[normalizedEmail];
-  if (!privateData) {
-    res.status(404).json({ error: 'User does not exist with that email address.' });
-    return;
-  }
-
-  db.userPrivateData[normalizedEmail].passwordHash = newPassword;
-  saveDB();
-  res.json({ message: 'Password updated successfully.' });
-});
-
-// CLINICS - Public read, authenticated write
-app.get('/api/clinics', (req, res) => {
-  res.json(db.clinics);
-});
-
-// REVIEWS - Public read
-app.get('/api/clinics/:id/reviews', (req, res) => {
-  const clinicReviews = db.reviews.filter(r => r.clinicId === req.params.id);
-  res.json(clinicReviews);
-});
-
-// ========================
-// PROTECTED API ROUTES (JWT auth required)
-// ========================
-
-// CLINICS - Create new clinic (authenticated)
-app.post('/api/clinics', authenticateToken, (req: any, res: any) => {
-  const { name, description, address, area, city, latitude, longitude, phone, specialists, hasEmergency, hasHomeVisit, workingHours, services, imageUrl } = req.body;
-
-  if (!name || !address || !area || !phone) {
-    res.status(400).json({ error: 'Missing key details (Name, Address, Area, and Phone number).' });
-    return;
-  }
-
-  const id = `clinic-${Date.now()}`;
-  const newClinic: VetClinic = {
-    id,
-    name,
-    description: description || 'Professional veterinary clinic centered around high-quality animal diagnostics and premium pet healthcare.',
-    address,
-    area,
-    city: city || 'Bengaluru',
-    latitude: parseOptionalNumber(latitude, 12.9716),
-    longitude: parseOptionalNumber(longitude, 77.5946),
-    phone,
-    rating: 5.0,
-    reviewsCount: 1,
-    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600',
-    specialists: specialists || ['Dog', 'Cat'],
-    hasEmergency: hasEmergency || false,
-    hasHomeVisit: hasHomeVisit || false,
-    isOpenNow: true,
-    workingHours: workingHours || '9:00 AM - 8:00 PM',
-    services: services || ['General Consultations', 'Vaccination', 'Pharmacy']
-  };
-
-  db.clinics.push(newClinic);
-  saveDB();
-  res.status(201).json(newClinic);
-});
-
-// REVIEWS - Create new review (authenticated)
-app.post('/api/clinics/:id/reviews', authenticateToken, (req: any, res: any) => {
-  const { rating, reviewText, petType } = req.body;
-  const clinicId = req.params.id;
-
-  if (!rating || !reviewText) {
-    res.status(400).json({ error: 'Rating and review comment are required.' });
-    return;
-  }
-
-  const newReview: ClinicReview = {
-    id: `rev-${Date.now()}`,
-    clinicId,
-    userName: req.user!.email ? db.users.find(u => normalizeEmail(u.email) === req.user!.email)?.name || 'Anonymous' : 'Anonymous',
-    userEmail: req.user!.email,
-    petType: petType || 'Pet',
-    rating: parseInt(rating),
-    reviewText,
-    date: new Date().toISOString().split('T')[0]
-  };
-
-  db.reviews.unshift(newReview);
-
-  // Re-calculate average clinic rating
-  const clinic = db.clinics.find(c => c.id === clinicId);
-  if (clinic) {
-    const allClinicReviews = db.reviews.filter(r => r.clinicId === clinicId);
-    const sum = allClinicReviews.reduce((acc, curr) => acc + curr.rating, 0);
-    const avg = Math.round((sum / allClinicReviews.length) * 10) / 10;
-    clinic.rating = avg;
-    clinic.reviewsCount = allClinicReviews.length;
-  }
-
-  saveDB();
-  res.status(201).json(newReview);
-});
-
-// BOOKINGS - Secured with tenant isolation
-app.get('/api/bookings', authenticateToken, (req: any, res: any) => {
-  const user = req.user!;
-
-  if (user.role === 'veterinarian') {
-    // Vet sees only bookings for their clinic
-    const clinicBookings = db.bookings.filter(b => b.clinicId === user.clinicId);
-    return res.json(sortNewestFirst(clinicBookings));
-  } else {
-    // Pet owner sees only their own bookings
-    const userBookings = db.bookings.filter(b => normalizeEmail(b.petOwnerEmail) === user.email);
-    return res.json(sortNewestFirst(userBookings));
-  }
-});
-
-app.post('/api/bookings', authenticateToken, (req: any, res: any) => {
-  const { clinicId, clinicName, petName, petType, service, date, time, type, notes } = req.body;
-  const user = req.user!;
-  const fullUser = db.users.find(u => normalizeEmail(u.email) === user.email);
-
-  if (!clinicId || !petName || !date || !time) {
-    res.status(400).json({ error: 'Missing essential booking credentials (clinicId, pet name, date, time).' });
-    return;
-  }
-
-  const newBooking: Booking = {
-    id: `booking-${Date.now()}`,
-    clinicId,
-    clinicName: clinicName || 'Veterinary Clinic',
-    petOwnerName: fullUser?.name || 'Pet Parent',
-    petOwnerEmail: user.email,
-    petName,
-    petType: petType || 'Dog',
-    service: service || 'General Consultation',
-    date,
-    time,
-    status: 'pending',
-    notes: notes || '',
-    type: type || 'clinic_visit',
-    createdAt: new Date().toISOString()
-  };
-
-  db.bookings.unshift(newBooking);
-  saveDB();
-  res.status(201).json(newBooking);
-});
-
-app.post('/api/bookings/:id/status', authenticateToken, requireRole('veterinarian'), (req: any, res: any) => {
-  const { status } = req.body;
-  const { id } = req.params;
-
-  const bIndex = db.bookings.findIndex(b => b.id === id);
-  if (bIndex === -1) {
-    res.status(404).json({ error: 'Booking order not found.' });
-    return;
-  }
-
-  // Vets can only update bookings for their own clinic
-  if (db.bookings[bIndex].clinicId !== req.user!.clinicId) {
-    res.status(403).json({ error: 'You can only manage bookings for your own clinic.' });
-    return;
-  }
-
-  db.bookings[bIndex].status = status;
-  saveDB();
-  res.json(db.bookings[bIndex]);
-});
-
-// EMERGENCY ASSISTANCE - Authenticated
-app.get('/api/emergency', authenticateToken, (req: any, res: any) => {
-  const user = req.user!;
-
-  if (user.role === 'veterinarian') {
-    // Vets see all active emergencies (for dispatching)
-    return res.json(sortNewestFirst(db.emergencies));
-  } else {
-    // Pet owners see only their own emergency requests
-    const userEmergencies = db.emergencies.filter(e => normalizeEmail(e.petOwnerEmail) === user.email);
-    return res.json(sortNewestFirst(userEmergencies));
-  }
-});
-
-app.post('/api/emergency', authenticateToken, (req: any, res: any) => {
-  const { petName, petType, phone, address, description, latitude, longitude } = req.body;
-  const user = req.user!;
-  const fullUser = db.users.find(u => normalizeEmail(u.email) === user.email);
-
-  if (!phone || !address || !description) {
-    res.status(400).json({ error: 'Emergency request needs phone number, location address, and symptom description.' });
-    return;
-  }
-
-  const newEmergency: EmergencyRequest = {
-    id: `emergency-${Date.now()}`,
-    petOwnerName: fullUser?.name || 'Urgent Caller',
-    petOwnerEmail: user.email,
-    petName: petName || 'Unknown Pet',
-    petType: petType || 'Dog',
-    phone,
-    address,
-    description,
-    latitude: parseOptionalNumber(latitude, 12.9716),
-    longitude: parseOptionalNumber(longitude, 77.5946),
-    status: 'pending',
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }),
-    createdAt: new Date().toISOString()
-  };
-
-  db.emergencies.unshift(newEmergency);
-  saveDB();
-  res.status(201).json(newEmergency);
-});
-
-app.post('/api/emergency/:id/status', authenticateToken, requireRole('veterinarian'), (req: any, res: any) => {
-  const { status, clinicId, clinicName } = req.body;
-  const { id } = req.params;
-
-  const eIndex = db.emergencies.findIndex(e => e.id === id);
-  if (eIndex === -1) {
-    res.status(404).json({ error: 'Emergency rescue instance not found.' });
-    return;
-  }
-
-  db.emergencies[eIndex].status = status;
-  if (clinicId) db.emergencies[eIndex].acceptedByClinicId = clinicId;
-  if (clinicName) db.emergencies[eIndex].acceptedByClinicName = clinicName;
-
-  saveDB();
-  res.json(db.emergencies[eIndex]);
-});
-
-// USER FAVORITES AND PET MANAGEMENT - Authenticated
-app.post('/api/user/favorites', authenticateToken, (req: any, res: any) => {
-  const { clinicId } = req.body;
-  const user = req.user!;
-
-  if (!clinicId) {
-    res.status(400).json({ error: 'clinicId is required.' });
-    return;
-  }
-
-  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === user.email);
-  if (uIndex === -1) {
-    res.status(404).json({ error: 'User profile not found.' });
-    return;
-  }
-
-  const favorites = db.users[uIndex].favoriteClinics || [];
-  const exists = favorites.includes(clinicId);
-
-  if (exists) {
-    db.users[uIndex].favoriteClinics = favorites.filter(id => id !== clinicId);
-  } else {
-    db.users[uIndex].favoriteClinics = [...favorites, clinicId];
-  }
-
-  saveDB();
-  res.json({ favoriteClinics: db.users[uIndex].favoriteClinics });
-});
-
-app.post('/api/user/pets', authenticateToken, (req: any, res: any) => {
-  const { name, type, breed, age, weight, medicalHistory } = req.body;
-  const user = req.user!;
-
-  if (!name || !type) {
-    res.status(400).json({ error: 'Name and species Type are required to add a pet.' });
-    return;
-  }
-
-  const uIndex = db.users.findIndex(u => normalizeEmail(u.email) === user.email);
-  if (uIndex === -1) {
-    res.status(404).json({ error: 'User account not found.' });
-    return;
-  }
-
-  const newPet: Pet = {
-    id: `pet-${Date.now()}`,
-    name,
-    type,
-    breed: breed || 'Indie / Mix',
-    age: age ? parseInt(age) : undefined,
-    weight: weight || '',
-    medicalHistory: medicalHistory ? [medicalHistory] : []
-  };
-
-  const pets = db.users[uIndex].pets || [];
-  db.users[uIndex].pets = [...pets, newPet];
-
-  saveDB();
-  res.status(201).json(db.users[uIndex]);
-});
-
-// GET current user profile (authenticated) - used to refresh user state
-app.get('/api/user/me', authenticateToken, (req: any, res: any) => {
-  const user = req.user!;
-  const fullUser = db.users.find(u => normalizeEmail(u.email) === user.email);
-
-  if (!fullUser) {
-    res.status(404).json({ error: 'User not found.' });
-    return;
-  }
-
-  res.json(fullUser);
-});
-
-// ========================
-// VITE MIDDLEWARE SETUP
-// ========================
-
 async function startServer() {
+  // Test database connection before starting
+  const dbConnected = await testConnection();
+  if (!dbConnected) {
+    console.error('⚠️  WARNING: Database connection failed. API routes requiring DB will fail.');
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -601,7 +590,18 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`QuickVet Server is happily running on http://0.0.0.0:${PORT}`);
+    console.log(`🐾 QuickVet Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  // Graceful shutdown
+  process.on('SIGINT', async () => {
+    console.log('\nShutting down gracefully...');
+    await closePool();
+    process.exit(0);
+  });
+  process.on('SIGTERM', async () => {
+    await closePool();
+    process.exit(0);
   });
 }
 

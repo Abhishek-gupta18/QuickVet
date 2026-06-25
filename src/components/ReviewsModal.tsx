@@ -26,8 +26,13 @@ export default function ReviewsModal({
     setLoading(true);
     try {
       const res = await fetch(`/api/clinics/${clinic.id}/reviews`);
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        setReviews([]);
+        return;
+      }
       const data = await res.json();
-      setReviews(data);
+      setReviews(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load clinic reviews:', err);
     } finally {
