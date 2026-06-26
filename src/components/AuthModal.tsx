@@ -38,11 +38,16 @@ export default function AuthModal({
     setErrorMsg('');
 
     try {
-      const res = await fetch('/api/auth/reset-password', {
+      const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, newPassword: password }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Password reset request failed.');
@@ -60,7 +65,8 @@ export default function AuthModal({
     setErrorMsg('');
     setLoading(true);
 
-    const url = type === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+    const url = type === 'login' ? `${apiBase}/api/auth/login` : `${apiBase}/api/auth/signup`;
     const payload = type === 'login' 
       ? { email, password }
       : { email, name, password, role, phone, clinicId: role === 'veterinarian' ? clinicId : undefined };
@@ -71,6 +77,10 @@ export default function AuthModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Cannot reach the server. Please try again later.');
+      }
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Authentication process failed.');
