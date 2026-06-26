@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="1000" alt="QuickVet Preview" src="<img width="1847" height="1072" alt="image" src="https://github.com/user-attachments/assets/30da25e2-e63b-458e-9ccf-99ee7f0fc793" />
+  <img width="1000" alt="QuickVet Preview" src="<img width="1847" height="1072" alt="image" src="Screenshot 2026-06-26 121847.jpg" />
 " />
 </div>
 
