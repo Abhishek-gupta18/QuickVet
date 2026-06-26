@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="1000" alt="QuickVet Preview" src="<img width="1847" height="1072" alt="image" src="Screenshot 2026-06-26 121847.jpg" />
+  <img width="1000" alt="QuickVet Preview" src="<img width="1847" height="1072" alt="image" src="preview.jpg" />
 " />
 </div>
 
