@@ -39,7 +39,8 @@ export default function VetDashboard({
     if (!clinic) return;
     const fetchClinicReviews = async () => {
       try {
-        const res = await fetch(`/api/clinics/${clinic.id}/reviews`);
+        const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+        const res = await fetch(`${apiBase}/api/clinics/${clinic.id}/reviews`);
         const contentType = res.headers.get('content-type') || '';
         if (!res.ok || !contentType.includes('application/json')) {
           setClinicReviews([]);

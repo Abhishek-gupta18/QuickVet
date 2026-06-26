@@ -93,7 +93,8 @@ export default function EmergencyWidget({
       };
 
       const token = localStorage.getItem('vetfinder_token');
-      const res = await fetch('/api/emergency', {
+      const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+      const res = await fetch(`${apiBase}/api/emergency`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
