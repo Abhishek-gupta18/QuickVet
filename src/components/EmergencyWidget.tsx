@@ -106,6 +106,11 @@ export default function EmergencyWidget({
         throw new Error('Endpoint failure');
       }
 
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response');
+      }
+
       const data: EmergencyRequest = await res.json();
       setActiveEmergency(data);
       setActiveStep(1); // Start at step 1

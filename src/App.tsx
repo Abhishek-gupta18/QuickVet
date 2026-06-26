@@ -49,6 +49,23 @@ async function authFetch(url: string, options: RequestInit = {}): Promise<Respon
   return res;
 }
 
+/**
+ * Safely parse JSON from a Response object.
+ * Returns null if the response body is not valid JSON (e.g., HTML error page).
+ */
+async function safeJson<T = any>(res: Response): Promise<T | null> {
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    console.warn(`Expected JSON but got "${contentType}" from ${res.url}`);
+    return null;
+  }
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 
 export default function App() {
   // Global State Engine
@@ -131,8 +148,9 @@ export default function App() {
     try {
       // Clinics are public
       const cRes = await fetch('/api/clinics');
-      const cData = await cRes.json();
-      setClinics(cData);
+      if (!cRes.ok) return;
+      const cData = await safeJson(cRes);
+      if (cData && Array.isArray(cData)) setClinics(cData);
 
       // Bookings & Emergencies require auth
       const token = getStoredToken();
@@ -142,19 +160,23 @@ export default function App() {
           handleForceLogout();
           return;
         }
-        const bData = await bRes.json();
-        setBookings(bData);
+        if (bRes.ok) {
+          const bData = await safeJson(bRes);
+          if (bData && Array.isArray(bData)) setBookings(bData);
+        }
 
         const eRes = await authFetch('/api/emergency');
         if (eRes.status === 401 || eRes.status === 403) {
           handleForceLogout();
           return;
         }
-        const eData = await eRes.json();
-        setEmergencies(eData);
+        if (eRes.ok) {
+          const eData = await safeJson(eRes);
+          if (eData && Array.isArray(eData)) setEmergencies(eData);
+        }
       }
     } catch (err) {
-      console.warn('Backend REST fetch failure.');
+      console.warn('Backend REST fetch failure:', err);
     }
   }, [handleForceLogout]);
 
@@ -197,10 +219,12 @@ export default function App() {
       handleForceLogout();
       return;
     }
-    const updatedUser = await res.json();
     if (!res.ok) throw new Error('Failed to save pet');
-    setCurrentUser(updatedUser);
-    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedUser));
+    const updatedUser = await safeJson(res);
+    if (updatedUser) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedUser));
+    }
   };
 
 
@@ -218,8 +242,9 @@ export default function App() {
       handleForceLogout();
       return;
     }
-    const data = await res.json();
     if (!res.ok) return;
+    const data = await safeJson(res);
+    if (!data) return;
 
     const updatedUser = { ...currentUser, favoriteClinics: data.favoriteClinics };
     setCurrentUser(updatedUser);
@@ -247,10 +272,10 @@ export default function App() {
       body: JSON.stringify(registrationPayload),
     });
     if (!res.ok) throw new Error('Registration failed');
-    const createdClinic = await res.json();
+    const createdClinic = await safeJson(res);
     await pullConfiguration();
 
-    if (currentUser && currentUser.role === 'veterinarian') {
+    if (currentUser && currentUser.role === 'veterinarian' && createdClinic) {
       const updatedUser = { ...currentUser, clinicId: createdClinic.id };
       setCurrentUser(updatedUser);
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedUser));
