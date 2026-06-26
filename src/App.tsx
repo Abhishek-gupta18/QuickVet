@@ -23,6 +23,11 @@ import { motion, AnimatePresence } from 'motion/react';
 const STORAGE_KEY_USER = 'vetfinder_user';
 const STORAGE_KEY_TOKEN = 'vetfinder_token';
 
+// ===== API Base URL =====
+// In development: empty string (same origin, Express serves both)
+// In production: set VITE_API_URL to your Render backend URL (e.g. https://quickvet-api.onrender.com)
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 
 // ===== Authenticated Fetch Helper =====
 function getStoredToken(): string | null {
@@ -39,7 +44,8 @@ function authHeaders(): Record<string, string> {
 }
 
 async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+  const res = await fetch(fullUrl, {
     ...options,
     headers: {
       ...authHeaders(),
@@ -147,7 +153,7 @@ export default function App() {
   const pullConfiguration = useCallback(async () => {
     try {
       // Clinics are public
-      const cRes = await fetch('/api/clinics');
+      const cRes = await fetch(`${API_BASE}/api/clinics`);
       if (!cRes.ok) return;
       const cData = await safeJson(cRes);
       if (cData && Array.isArray(cData)) setClinics(cData);
