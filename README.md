@@ -5,7 +5,11 @@
 
   ![Status](https://img.shields.io/badge/Status-Active%20Development-brightgreen)
   ![Version](https://img.shields.io/badge/Version-1.0.0-blue)
+<<<<<<< docs/readme-and-license
+  ![License](https://img.shields.io/badge/License-MIT-yellow)
+=======
   ![License](https://img.shields.io/badge/License-Private-lightgrey)
+>>>>>>> main
 </div>
 
 ---
@@ -94,6 +98,186 @@
 ```
 
 ---
+<<<<<<< docs/readme-and-license
+
+## Tech Stack
+
+### Frontend
+| Technology | Purpose |
+|-----------|---------|
+| **React 19** | UI component library |
+| **Vite 6** | Build tool & dev server (middleware mode) |
+| **Tailwind CSS 4** | Utility-first styling |
+| **Framer Motion** | Page transitions & animations |
+| **Leaflet** | Interactive maps with markers & routing |
+| **Lucide React** | Icon library |
+| **canvas-confetti** | Celebration animations |
+
+### Backend
+| Technology | Purpose |
+|-----------|---------|
+| **Express 4** | HTTP server & REST API |
+| **Drizzle ORM** | Type-safe PostgreSQL queries & migrations |
+| **bcryptjs** | Password hashing (10 salt rounds) |
+| **Custom JWT (HS256)** | Token-based authentication (no external lib) |
+| **dotenv** | Environment configuration |
+
+### Database
+| Technology | Purpose |
+|-----------|---------|
+| **PostgreSQL** | Primary relational database |
+| **Drizzle Kit** | Schema migrations & studio |
+| **pg (node-postgres)** | Connection pooling (max 20 connections) |
+
+### DevOps / Tooling
+| Technology | Purpose |
+|-----------|---------|
+| **TypeScript 5.8** | End-to-end type safety |
+| **tsx** | Development server runner |
+| **esbuild** | Production server bundling |
+| **Drizzle Studio** | Database GUI for development |
+
+---
+
+## Database Schema
+
+7 tables with full referential integrity:
+
+```
+┌──────────────┐       ┌──────────────────┐       ┌─────────────┐
+│  vet_clinics │◄──────│ favorite_clinics  │──────►│    users    │
+│              │       │   (join table)    │       │             │
+│  id (PK)     │       └──────────────────┘       │  id (PK)    │
+│  name        │                                   │  email (UQ) │
+│  address     │◄──┐                               │  role       │
+│  area        │   │                               │  clinicId   │──┐
+│  latitude    │   │   ┌──────────────────┐       └─────────────┘  │
+│  longitude   │   ├───│  clinic_reviews   │              │         │
+│  rating      │   │   └──────────────────┘              │         │
+│  specialists │   │                                      ▼         │
+│  services    │   │   ┌──────────────────┐       ┌─────────────┐  │
+│  hasEmergency│   ├───│    bookings      │──────►│    pets     │  │
+│  hasHomeVisit│   │   └──────────────────┘       └─────────────┘  │
+└──────────────┘   │                                                │
+        ▲          │   ┌──────────────────┐                        │
+        │          └───│emergency_requests │                        │
+        │              └──────────────────┘                        │
+        └──────────────────────────────────────────────────────────┘
+```
+
+| Table | Records | Description |
+|-------|---------|-------------|
+| `vet_clinics` | Clinic profiles | Vet clinic directory with geo-coords, services, and ratings |
+| `users` | User accounts | Pet owners & veterinarians with role-based access |
+| `pets` | Pet profiles | Owner's pets with breed, age, weight, medical history |
+| `favorite_clinics` | M:N join | Users can favorite/bookmark clinics |
+| `clinic_reviews` | Star reviews | 1-5 star ratings with text feedback per clinic |
+| `bookings` | Appointments | Clinic visits & home visits with status tracking |
+| `emergency_requests` | SOS alerts | Emergency requests with location & acceptance workflow |
+
+---
+
+## API Routes
+
+### Public (No Auth Required)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/signup` | Create a new user account |
+| `POST` | `/api/auth/login` | Authenticate and receive JWT |
+| `POST` | `/api/auth/reset-password` | Reset user password |
+| `GET` | `/api/clinics` | List all registered clinics |
+| `GET` | `/api/clinics/:id/reviews` | Get reviews for a clinic |
+
+### Protected (JWT Required)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/user/me` | Get current user profile |
+| `POST` | `/api/user/pets` | Add a pet to profile |
+| `POST` | `/api/user/favorites` | Toggle clinic favorite |
+| `POST` | `/api/clinics` | Register a new clinic |
+| `POST` | `/api/clinics/:id/reviews` | Submit a clinic review |
+| `GET` | `/api/bookings` | Get user/clinic bookings |
+| `POST` | `/api/bookings` | Create a new booking |
+| `GET` | `/api/emergency` | Get emergency requests |
+| `POST` | `/api/emergency` | Submit emergency request |
+
+### Veterinarian Only (JWT + Role Guard)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/bookings/:id/status` | Update booking status |
+| `POST` | `/api/emergency/:id/status` | Accept/update emergency |
+
+---
+
+## Project Structure
+
+```
+QuickVet/
+├── server.ts                    # Express server entry point (API + Vite middleware)
+├── vite.config.ts               # Vite build config (React + Tailwind)
+├── drizzle.config.ts            # Drizzle Kit migration config
+├── package.json                 # Dependencies & scripts
+├── tsconfig.json                # TypeScript configuration
+├── index.html                   # SPA entry HTML
+├── .env.example                 # Environment variable template
+├── LICENSE                      # MIT License
+│
+├── src/
+│   ├── App.tsx                  # Main app component (routing, state, views)
+│   ├── main.tsx                 # React DOM entry
+│   ├── index.css                # Global styles + Tailwind imports
+│   ├── types.ts                 # Shared TypeScript interfaces
+│   ├── data.ts                  # Utility functions (Haversine distance, etc.)
+│   │
+│   ├── components/
+│   │   ├── Navbar.tsx           # Top navigation with role-aware links
+│   │   ├── Hero.tsx             # Landing page hero section
+│   │   ├── InteractiveMap.tsx   # Leaflet map with clinic markers
+│   │   ├── ClinicCard.tsx       # Clinic listing card component
+│   │   ├── BookingModal.tsx     # Appointment booking form
+│   │   ├── ReviewsModal.tsx     # Clinic reviews viewer/writer
+│   │   ├── EmergencyWidget.tsx  # Emergency SOS submission form
+│   │   ├── AuthModal.tsx        # Login/signup modal
+│   │   ├── UserDashboard.tsx    # Pet owner dashboard
+│   │   ├── VetDashboard.tsx     # Veterinarian management dashboard
+│   │   ├── VetRegistrationModal.tsx  # New clinic registration form
+│   │   └── Footer.tsx           # Page footer
+│   │
+│   └── server/
+│       ├── db.ts                # PostgreSQL pool + Drizzle instance
+│       ├── schema.ts            # Drizzle ORM table definitions & relations
+│       ├── jwt.ts               # Custom HS256 JWT sign/verify (zero-dep)
+│       ├── middleware.ts        # Auth & role-guard Express middleware
+│       └── seed.ts              # Database seeding script
+│
+├── public/
+│   ├── favicon.png
+│   └── apple-touch-icon.png
+│
+└── assets/
+    └── preview.svg
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** 18+ (recommended)
+- **PostgreSQL** 14+ (local or cloud — Railway, Neon, Supabase, etc.)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Abhishek-gupta18/QuickVet.git
+cd QuickVet
+```
+
+=======
 
 ## Tech Stack
 
@@ -271,6 +455,7 @@ git clone https://github.com/Abhishek-gupta18/QuickVet.git
 cd QuickVet
 ```
 
+>>>>>>> main
 ### 2. Install dependencies
 
 ```bash
@@ -300,6 +485,7 @@ npm run db:push
 
 # (Optional) Seed with sample data
 npm run db:seed
+<<<<<<< docs/readme-and-license
 ```
 
 ### 5. Start the development server
@@ -308,6 +494,16 @@ npm run db:seed
 npm run dev
 ```
 
+=======
+```
+
+### 5. Start the development server
+
+```bash
+npm run dev
+```
+
+>>>>>>> main
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
@@ -328,6 +524,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ---
 
 ## Deployment
+<<<<<<< docs/readme-and-license
 
 QuickVet is designed for a **split deployment**:
 
@@ -337,6 +534,17 @@ QuickVet is designed for a **split deployment**:
 | Backend | **Render** | Set all env vars (`DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`) |
 | Database | **Railway / Neon** | Managed PostgreSQL |
 
+=======
+
+QuickVet is designed for a **split deployment**:
+
+| Component | Platform | Notes |
+|-----------|----------|-------|
+| Frontend | **Vercel** | Set `VITE_API_URL` to backend URL |
+| Backend | **Render** | Set all env vars (`DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`) |
+| Database | **Railway / Neon** | Managed PostgreSQL |
+
+>>>>>>> main
 ### Production Build
 
 ```bash
@@ -361,6 +569,15 @@ The build outputs:
 
 ---
 
+<<<<<<< docs/readme-and-license
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+=======
+>>>>>>> main
 ## Contributing
 
 1. Fork the repository
@@ -372,5 +589,9 @@ The build outputs:
 ---
 
 <div align="center">
+<<<<<<< docs/readme-and-license
+  <p>Built with 💚 for pet parents in Bengaluru</p>
+=======
   <p>Built with :green_heart: for pet parents in Bengaluru</p>
+>>>>>>> main
 </div>
