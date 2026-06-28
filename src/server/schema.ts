@@ -52,7 +52,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   name: varchar('name', { length: 100 }).notNull(),
-  role: varchar('role', { length: 20 }).notNull(), // 'pet_owner' | 'veterinarian' | 'guest'
+  role: varchar('role', { length: 20 }).notNull(), // 'pet_owner' | 'veterinarian' | 'admin' | 'guest'
   phone: varchar('phone', { length: 30 }),
   avatarUrl: text('avatar_url'),
   clinicId: varchar('clinic_id', { length: 100 }).references(() => vetClinics.id, { onDelete: 'set null' }),

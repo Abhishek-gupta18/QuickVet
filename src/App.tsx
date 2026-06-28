@@ -12,6 +12,7 @@ import ReviewsModal from './components/ReviewsModal';
 import EmergencyWidget from './components/EmergencyWidget';
 import UserDashboard from './components/UserDashboard';
 import VetDashboard from './components/VetDashboard';
+import AdminDashboard from './components/AdminDashboard';
 import VetRegistrationModal from './components/VetRegistrationModal';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
@@ -201,7 +202,9 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY_TOKEN, token);
 
     // Route to correct dashboard by role
-    if (user.role === 'veterinarian') {
+    if (user.role === 'admin') {
+      setActiveTab('admin_dashboard');
+    } else if (user.role === 'veterinarian') {
       setActiveTab('vet_dashboard');
     } else {
       setActiveTab('user_dashboard');
@@ -761,7 +764,35 @@ export default function App() {
         )}
 
 
-        {/* VIEW 7: VET REGISTRATION */}
+        {/* VIEW 7: ADMIN DASHBOARD - ROLE GUARDED (admin only) */}
+        {activeTab === 'admin_dashboard' && (
+          currentUser && currentUser.role === 'admin' ? (
+            <motion.div key="admin_dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-grow">
+              <AdminDashboard
+                currentUser={currentUser}
+                clinics={clinics}
+                bookings={bookings}
+                emergencies={emergencies}
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="admin_dashboard_guard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex-grow flex items-center justify-center py-20">
+              <div className="bg-white p-10 rounded-3xl border border-red-100 shadow-lg text-center max-w-md space-y-4">
+                <ShieldAlert className="w-12 h-12 text-red-400 mx-auto" />
+                <h3 className="font-display font-black text-xl text-gray-900">Access Denied</h3>
+                <p className="text-sm text-gray-500">This command center is restricted to QuickVet administrators.</p>
+                <button onClick={() => { setActiveTab('home'); if (!currentUser) setAuthModalType('login'); }}
+                  className="px-6 py-3 bg-[#58B368] text-white font-bold rounded-xl text-sm">
+                  {currentUser ? 'Return Home' : 'Login as Admin'}
+                </button>
+              </div>
+            </motion.div>
+          )
+        )}
+
+
+        {/* VIEW 8: VET REGISTRATION */}
         {activeTab === 'vet_register' && (
           <motion.div key="vet_register" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-grow">
             <VetRegistrationModal onClose={() => setActiveTab('home')} onSubmitRegistration={handleSubmitVetRegistration} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PawPrint, Phone, Menu, X, LogIn, User, ClipboardList, AlertTriangle, LogOut } from 'lucide-react';
+import { Phone, Menu, X, LogIn, ClipboardList, AlertTriangle, LogOut, ShieldCheck } from 'lucide-react';
 import { User as UserType } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -84,6 +84,16 @@ export default function Navbar({
               >
                 <ClipboardList className="w-4 h-4" />
                 <span>Doctor Portal</span>
+              </button>
+            )}
+
+            {currentUser && currentUser.role === 'admin' && (
+              <button
+                onClick={() => handleNavClick('admin_dashboard')}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white border border-slate-800 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4 text-green-300" />
+                <span>Admin Control</span>
               </button>
             )}
 
@@ -265,6 +275,20 @@ export default function Navbar({
               >
                 <ClipboardList className="w-5 h-5" />
                 <span>Doctor Portal Dashboard</span>
+              </motion.button>
+            )}
+
+            {currentUser && currentUser.role === 'admin' && (
+              <motion.button
+                onClick={() => handleNavClick('admin_dashboard')}
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white bg-slate-900 border border-slate-800 font-bold transition-all text-left"
+              >
+                <ShieldCheck className="w-5 h-5 text-green-300" />
+                <span>Admin Control Center</span>
               </motion.button>
             )}
 

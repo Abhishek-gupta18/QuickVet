@@ -82,6 +82,9 @@ app.post('/api/auth/signup', async (req, res) => {
     if (!email || !name || !password || !role) {
       return res.status(400).json({ error: 'Missing required signup parameters.' });
     }
+    if (!['pet_owner', 'veterinarian'].includes(role)) {
+      return res.status(400).json({ error: 'Unsupported signup role.' });
+    }
     if (role === 'veterinarian' && !clinicId) {
       return res.status(400).json({ error: 'Clinic ID is required for veterinarian signups.' });
     }
@@ -302,7 +305,10 @@ app.post('/api/clinics/:id/reviews', authenticateToken, async (req: any, res: an
 app.get('/api/bookings', authenticateToken, async (req: any, res: any) => {
   try {
     let results;
-    if (req.user.role === 'veterinarian') {
+    if (req.user.role === 'admin') {
+      results = await db.select().from(bookings)
+        .orderBy(desc(bookings.createdAt));
+    } else if (req.user.role === 'veterinarian') {
       results = await db.select().from(bookings)
         .where(eq(bookings.clinicId, req.user.clinicId || ''))
         .orderBy(desc(bookings.createdAt));
@@ -397,7 +403,7 @@ app.post('/api/bookings/:id/status', authenticateToken, requireRole('veterinaria
 app.get('/api/emergency', authenticateToken, async (req: any, res: any) => {
   try {
     let results;
-    if (req.user.role === 'veterinarian') {
+    if (req.user.role === 'admin' || req.user.role === 'veterinarian') {
       results = await db.select().from(emergencyRequests).orderBy(desc(emergencyRequests.createdAt));
     } else {
       results = await db.select().from(emergencyRequests)

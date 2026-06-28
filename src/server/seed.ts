@@ -3,7 +3,7 @@
  * 
  * Populates the PostgreSQL database with initial demo data:
  * - 6 veterinary clinics in Bengaluru
- * - 2 default user accounts (pet owner + veterinarian)
+ * - 3 default user accounts (pet owner + veterinarian + admin)
  * - 2 pets for the pet owner
  * - 4 clinic reviews
  * - 1 seed booking
@@ -182,6 +182,16 @@ async function seed() {
       avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150',
       clinicId: 'clinic-1',
     },
+    {
+      id: 'user-admin',
+      email: 'admin@gmail.com',
+      passwordHash,
+      name: 'Asha Menon',
+      role: 'admin',
+      phone: '+91 90000 11223',
+      avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Asha%20Menon',
+      clinicId: null,
+    },
   ]).onConflictDoNothing();
 
   // ============================================================
@@ -314,6 +324,7 @@ async function seed() {
   console.log('   Demo accounts:');
   console.log('   • Pet Owner:    owner@gmail.com / password');
   console.log('   • Veterinarian: vet@gmail.com / password\n');
+  console.log('   • Admin:        admin@gmail.com / password\n');
 }
 
 // Execute seed and handle cleanup
