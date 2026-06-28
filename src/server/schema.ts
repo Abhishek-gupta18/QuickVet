@@ -42,6 +42,19 @@ export const vetClinics = pgTable('vet_clinics', {
   isOpenNow: boolean('is_open_now').default(true),
   workingHours: varchar('working_hours', { length: 100 }).notNull(),
   services: jsonb('services').notNull().$type<string[]>().default([]),
+  verificationDocuments: jsonb('verification_documents').notNull().$type<Array<{
+    id: string;
+    label: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    uploadedAt: string;
+    dataUrl?: string;
+  }>>().default([]),
+  verificationStatus: varchar('verification_status', { length: 30 }).default('approved'),
+  licenseNumber: varchar('license_number', { length: 100 }),
+  veterinarianName: varchar('veterinarian_name', { length: 120 }),
+  yearsOfExperience: varchar('years_of_experience', { length: 30 }),
 });
 
 // ============================================================

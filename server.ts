@@ -190,6 +190,11 @@ app.get('/api/clinics', async (_req, res) => {
       specialists: c.specialists, hasEmergency: c.hasEmergency,
       hasHomeVisit: c.hasHomeVisit, isOpenNow: c.isOpenNow,
       workingHours: c.workingHours, services: c.services,
+      verificationDocuments: c.verificationDocuments || [],
+      verificationStatus: c.verificationStatus || 'approved',
+      licenseNumber: c.licenseNumber || '',
+      veterinarianName: c.veterinarianName || '',
+      yearsOfExperience: c.yearsOfExperience || '',
     }));
     res.json(mapped);
   } catch (err: any) {
@@ -225,7 +230,11 @@ app.get('/api/clinics/:id/reviews', async (req, res) => {
 // CLINICS: Create (authenticated)
 app.post('/api/clinics', authenticateToken, async (req: any, res: any) => {
   try {
-    const { name, description, address, area, city, latitude, longitude, phone, specialists, hasEmergency, hasHomeVisit, workingHours, services, imageUrl } = req.body;
+    const {
+      name, description, address, area, city, latitude, longitude, phone,
+      specialists, hasEmergency, hasHomeVisit, workingHours, services, imageUrl,
+      verificationDocuments, licenseNumber, veterinarianName, yearsOfExperience,
+    } = req.body;
     if (!name || !address || !area || !phone) {
       return res.status(400).json({ error: 'Missing key details (Name, Address, Area, Phone).' });
     }
@@ -245,12 +254,22 @@ app.post('/api/clinics', authenticateToken, async (req: any, res: any) => {
       isOpenNow: true,
       workingHours: workingHours || '9:00 AM - 8:00 PM',
       services: services || ['General Consultations', 'Vaccination', 'Pharmacy'],
+      verificationDocuments: Array.isArray(verificationDocuments) ? verificationDocuments : [],
+      verificationStatus: 'pending',
+      licenseNumber: licenseNumber || '',
+      veterinarianName: veterinarianName || '',
+      yearsOfExperience: yearsOfExperience || '',
     }).returning();
 
     res.status(201).json({
       ...newClinic,
       rating: parseFloat(newClinic.rating || '5'),
       reviewsCount: newClinic.reviewsCount || 0,
+      verificationDocuments: newClinic.verificationDocuments || [],
+      verificationStatus: newClinic.verificationStatus || 'pending',
+      licenseNumber: newClinic.licenseNumber || '',
+      veterinarianName: newClinic.veterinarianName || '',
+      yearsOfExperience: newClinic.yearsOfExperience || '',
     });
   } catch (err: any) {
     console.error('Create clinic error:', err);

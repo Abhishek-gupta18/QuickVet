@@ -46,6 +46,21 @@ export interface VetClinic {
   isOpenNow: boolean;
   workingHours: string;
   services: string[];
+  verificationDocuments?: VetDocument[];
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'needs_documents' | 'hold';
+  licenseNumber?: string;
+  veterinarianName?: string;
+  yearsOfExperience?: string;
+}
+
+export interface VetDocument {
+  id: string;
+  label: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+  dataUrl?: string;
 }
 
 export interface ClinicReview {

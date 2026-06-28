@@ -25,7 +25,7 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
-import { Booking, EmergencyRequest, User, VetClinic } from '../types';
+import { Booking, EmergencyRequest, User, VetClinic, VetDocument } from '../types';
 
 interface AdminDashboardProps {
   currentUser: User;
@@ -57,7 +57,12 @@ const verificationApplications = [
     assignedTo: 'Asha Menon',
     specialty: 'Emergency and Surgery',
     risk: 'Low',
-    documents: ['License PDF', 'Government ID', 'BVSc Degree', 'Clinic Lease'],
+    documents: [
+      mockDocument('Medical License', 'license-neha-kapoor.pdf', 'application/pdf'),
+      mockDocument('Government ID', 'aadhaar-neha-kapoor.pdf', 'application/pdf'),
+      mockDocument('BVSc Degree', 'bvsc-degree-neha.png', 'image/png'),
+      mockDocument('Clinic Lease', 'clinic-lease.pdf', 'application/pdf'),
+    ],
   },
   {
     id: 'qv-ver-1041',
@@ -71,7 +76,11 @@ const verificationApplications = [
     assignedTo: 'Kabir Shah',
     specialty: 'Critical Care',
     risk: 'Medium',
-    documents: ['License PDF', 'Government ID', 'Experience Letter'],
+    documents: [
+      mockDocument('Medical License', 'license-arvind-rao.pdf', 'application/pdf'),
+      mockDocument('Government ID', 'passport-arvind.jpg', 'image/jpeg'),
+      mockDocument('Experience Letter', 'experience-letter.pdf', 'application/pdf'),
+    ],
   },
   {
     id: 'qv-ver-1038',
@@ -85,7 +94,10 @@ const verificationApplications = [
     assignedTo: 'Asha Menon',
     specialty: 'Birds and Exotics',
     risk: 'High',
-    documents: ['Government ID', 'Degree Certificate'],
+    documents: [
+      mockDocument('Government ID', 'id-saira-thomas.pdf', 'application/pdf'),
+      mockDocument('Degree Certificate', 'degree-saira-thomas.pdf', 'application/pdf'),
+    ],
   },
 ];
 
@@ -105,9 +117,42 @@ const auditLogs = [
 const monthlyBars = [38, 52, 46, 64, 72, 88, 76, 92];
 const emergencyBars = [18, 22, 15, 27, 31, 24, 35, 29];
 
+function mockDocument(label: string, fileName: string, fileType: string): VetDocument {
+  return {
+    id: `mock-${fileName}`,
+    label,
+    fileName,
+    fileType,
+    fileSize: 420000,
+    uploadedAt: '2026-06-28T10:30:00.000Z',
+  };
+}
+
 export default function AdminDashboard({ currentUser, clinics, bookings, emergencies }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDocument, setSelectedDocument] = useState<{ vetName: string; document: VetDocument } | null>(null);
+
+  const applications = useMemo(() => {
+    const uploadedApplications = clinics
+      .filter((clinic) => clinic.verificationDocuments && clinic.verificationDocuments.length > 0)
+      .map((clinic, index) => ({
+        id: `clinic-ver-${clinic.id}`,
+        doctor: clinic.veterinarianName || `Veterinarian for ${clinic.name}`,
+        license: clinic.licenseNumber || 'License pending entry',
+        clinic: clinic.name,
+        city: clinic.city,
+        submitted: clinic.verificationDocuments?.[0]?.uploadedAt?.split('T')[0] || '2026-06-28',
+        status: clinic.verificationStatus === 'approved' ? 'Approved' : 'Pending',
+        progress: Math.min(96, 44 + (clinic.verificationDocuments?.length || 0) * 14),
+        assignedTo: 'Asha Menon',
+        specialty: clinic.specialists.join(', '),
+        risk: index % 3 === 0 ? 'Low' : 'Medium',
+        documents: clinic.verificationDocuments || [],
+      }));
+
+    return [...uploadedApplications, ...verificationApplications];
+  }, [clinics]);
 
   const stats = useMemo(() => {
     const pendingBookings = bookings.filter((booking) => booking.status === 'pending').length;
@@ -120,7 +165,7 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
       totalUsers: Math.max(1284, bookings.length * 14 + clinics.length * 11),
       totalVets: clinics.length,
       activeVets: clinics.filter((clinic) => clinic.isOpenNow).length,
-      pendingApprovals: verificationApplications.filter((app) => app.status === 'Pending' || app.status === 'Needs Documents').length,
+      pendingApprovals: applications.filter((app) => app.status === 'Pending' || app.status === 'Needs Documents').length,
       suspendedAccounts: 3,
       emergencyToday: Math.max(activeEmergencies, emergencies.length),
       appointments: bookings.length,
@@ -128,9 +173,9 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
       averageRating,
       growth: 12.8,
     };
-  }, [bookings, clinics, emergencies]);
+  }, [applications, bookings, clinics, emergencies]);
 
-  const filteredApplications = verificationApplications.filter((app) => {
+  const filteredApplications = applications.filter((app) => {
     const haystack = `${app.doctor} ${app.license} ${app.clinic} ${app.status} ${app.specialty}`.toLowerCase();
     return haystack.includes(searchTerm.toLowerCase());
   });
@@ -368,9 +413,13 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {app.documents.map((doc) => (
-                              <span key={doc} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600">
-                                <FileSearch className="w-3 h-3" /> {doc}
-                              </span>
+                              <button
+                                key={doc.id}
+                                onClick={() => setSelectedDocument({ vetName: app.doctor, document: doc })}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:border-green-300 hover:text-green-700"
+                              >
+                                <FileSearch className="w-3 h-3" /> {doc.label}
+                              </button>
                             ))}
                           </div>
                         </div>
@@ -518,20 +567,25 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-5 space-y-4">
                   <h3 className="font-display font-black text-2xl text-slate-900">Document Verification Center</h3>
-                  {verificationApplications.map((app) => (
+                  {applications.map((app) => (
                     <div key={app.id} className="rounded-2xl border border-slate-100 p-4">
                       <div className="flex items-center justify-between gap-3 mb-3">
                         <div>
                           <h4 className="font-black text-slate-900">{app.doctor}</h4>
-                          <p className="text-xs text-slate-500">{app.license}</p>
+                          <p className="text-xs text-slate-500">{app.license} · {app.documents.length} uploaded files</p>
                         </div>
                         <button className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600" title="Download documents"><Download className="w-4 h-4" /></button>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         {app.documents.map((document) => (
-                          <button key={document} className="min-h-20 rounded-2xl bg-slate-50 border border-slate-200 text-[10px] font-black text-slate-600 flex flex-col items-center justify-center gap-2">
+                          <button
+                            key={document.id}
+                            onClick={() => setSelectedDocument({ vetName: app.doctor, document })}
+                            className="min-h-20 rounded-2xl bg-slate-50 border border-slate-200 text-[10px] font-black text-slate-600 flex flex-col items-center justify-center gap-2 hover:border-green-300 hover:text-green-700"
+                          >
                             <FileSearch className="w-5 h-5 text-green-600" />
-                            {document}
+                            <span>{document.label}</span>
+                            <span className="max-w-full px-2 truncate text-slate-400 font-bold">{document.fileName}</span>
                           </button>
                         ))}
                       </div>
@@ -581,8 +635,72 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
           </main>
         </div>
       </div>
+
+      {selectedDocument && (
+        <div className="fixed inset-0 z-[2500] bg-slate-950/75 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[88vh] overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-display font-black text-xl text-slate-900">{selectedDocument.document.label}</h3>
+                <p className="text-xs text-slate-500">
+                  {selectedDocument.vetName} · {selectedDocument.document.fileName} · {formatBytes(selectedDocument.document.fileSize)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedDocument.document.dataUrl && (
+                  <a
+                    href={selectedDocument.document.dataUrl}
+                    download={selectedDocument.document.fileName}
+                    className="px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-black flex items-center gap-1.5"
+                  >
+                    <Download className="w-4 h-4" /> Download
+                  </a>
+                )}
+                <button
+                  onClick={() => setSelectedDocument(null)}
+                  className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-black"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-100 overflow-auto min-h-[420px]">
+              {selectedDocument.document.dataUrl ? (
+                selectedDocument.document.fileType.startsWith('image/') ? (
+                  <img
+                    src={selectedDocument.document.dataUrl}
+                    alt={selectedDocument.document.label}
+                    className="max-w-full mx-auto rounded-2xl border border-slate-200 bg-white"
+                  />
+                ) : (
+                  <iframe
+                    src={selectedDocument.document.dataUrl}
+                    title={selectedDocument.document.label}
+                    className="w-full h-[65vh] rounded-2xl border border-slate-200 bg-white"
+                  />
+                )
+              ) : (
+                <div className="h-[420px] rounded-2xl border border-dashed border-slate-300 bg-white flex flex-col items-center justify-center text-center p-6">
+                  <FileSearch className="w-10 h-10 text-slate-400 mb-3" />
+                  <h4 className="font-black text-slate-800">Demo document placeholder</h4>
+                  <p className="text-sm text-slate-500 max-w-md">
+                    This sample application has document metadata only. Newly registered vets upload files that open here in full preview.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return '0 KB';
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  return `${(kb / 1024).toFixed(2)} MB`;
 }
 
 function Info({ label, value }: { label: string; value: string }) {

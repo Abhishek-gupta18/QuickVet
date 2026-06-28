@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Landmark, Compass, ClipboardCheck, Zap, ShieldCheck, Heart, Sparkles, Check } from 'lucide-react';
+import { X, Landmark, ClipboardCheck, Zap, ShieldCheck, Heart, Upload, FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { VetDocument } from '../types';
 
 interface VetRegistrationModalProps {
   onClose: () => void;
@@ -18,6 +19,9 @@ export default function VetRegistrationModal({
   const [city, setCity] = useState('Bengaluru');
   const [phone, setPhone] = useState('');
   const [workingHours, setWorkingHours] = useState('09:00 AM - 08:30 PM');
+  const [veterinarianName, setVeterinarianName] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [yearsOfExperience, setYearsOfExperience] = useState('');
   
   // Specialists
   const [spDog, setSpDog] = useState(true);
@@ -30,6 +34,12 @@ export default function VetRegistrationModal({
   const [hasEmergency, setHasEmergency] = useState(false);
   const [hasHomeVisit, setHasHomeVisit] = useState(false);
   const [servicesInput, setServicesInput] = useState('General Consultation, Vaccination, Small surgeries, Deworming');
+  const [documents, setDocuments] = useState<Record<string, VetDocument | null>>({
+    medicalLicense: null,
+    governmentId: null,
+    degreeCertificate: null,
+    clinicProof: null,
+  });
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
 
@@ -45,10 +55,45 @@ export default function VetRegistrationModal({
     };
   };
 
+  const readFileAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+  const handleDocumentUpload = async (key: string, label: string, file: File | null) => {
+    if (!file) return;
+    if (file.size > 2.5 * 1024 * 1024) {
+      alert('Please upload a document under 2.5 MB for this demo.');
+      return;
+    }
+
+    const dataUrl = await readFileAsDataUrl(file);
+    setDocuments((prev) => ({
+      ...prev,
+      [key]: {
+        id: `${key}-${Date.now()}`,
+        label,
+        fileName: file.name,
+        fileType: file.type || 'application/octet-stream',
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+        dataUrl,
+      },
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !address || !phone) {
-      alert('Mandatory details: Clinic Name, Address, and Phone numbers are missing.');
+    if (!name || !address || !phone || !veterinarianName || !licenseNumber) {
+      alert('Mandatory details: Doctor Name, License Number, Clinic Name, Address, and Phone are required.');
+      return;
+    }
+
+    const uploadedDocuments = Object.values(documents).filter(Boolean) as VetDocument[];
+    if (uploadedDocuments.length < 3) {
+      alert('Please upload at least Medical License, Government ID, and Degree Certificate for admin verification.');
       return;
     }
 
@@ -78,6 +123,10 @@ export default function VetRegistrationModal({
       hasHomeVisit,
       workingHours,
       services,
+      veterinarianName,
+      licenseNumber,
+      yearsOfExperience,
+      verificationDocuments: uploadedDocuments,
       imageUrl: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600' // Generic premium clinic
     };
 
@@ -130,10 +179,11 @@ export default function VetRegistrationModal({
               <p className="pt-1.5">🔬 <b>Clinic Station:</b> {name}</p>
               <p>📍 <b>Map neighborhood:</b> {area}, {city}</p>
               <p>📞 <b>Helpline:</b> {phone}</p>
-              <p className="text-[#4CAF50] font-black mt-1">● Automatically plotted on QuickVet Live OpenStreetMap!</p>
+              <p>📎 <b>Verification files:</b> {Object.values(documents).filter(Boolean).length} uploaded</p>
+              <p className="text-[#4CAF50] font-black mt-1">● Sent to admin verification queue before public activation.</p>
             </div>
             <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              You are now actively listed amongst QuickVet search results. Local pet parents in Indiranagar/Bangalore region can now find you and request emergency support.
+              Your clinic profile and documents are saved. QuickVet admins can now inspect your license, identity proof, degree, and clinic proof before approval.
             </p>
             <button
               onClick={onClose}
@@ -189,6 +239,43 @@ export default function VetRegistrationModal({
             {/* Right Column: Inputs fields Form (8/12 cols) */}
             <form onSubmit={handleSubmit} className="md:col-span-8 space-y-4 text-left">
               <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50">Clinic Details Form</h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Veterinarian Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Dr. Neha Kapoor"
+                    value={veterinarianName}
+                    onChange={(e) => setVeterinarianName(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Vet Registration No. *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. KVC-2024-77112"
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Experience</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 8 years"
+                    value={yearsOfExperience}
+                    onChange={(e) => setYearsOfExperience(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -339,6 +426,43 @@ export default function VetRegistrationModal({
                       <span>Rabbits</span>
                     </label>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-green-700" />
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-600 uppercase tracking-wide">Verification Documents *</label>
+                    <p className="text-[10px] text-gray-400">PDF, PNG, or JPG files. Admin can open these from the dashboard.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'medicalLicense', label: 'Medical License' },
+                    { key: 'governmentId', label: 'Government ID Proof' },
+                    { key: 'degreeCertificate', label: 'Degree / Certificate' },
+                    { key: 'clinicProof', label: 'Clinic / Hospital Proof' },
+                  ].map((doc) => {
+                    const uploaded = documents[doc.key];
+                    return (
+                      <label key={doc.key} className="block bg-white border border-slate-200 rounded-2xl p-3 cursor-pointer hover:border-green-300 transition-colors">
+                        <input
+                          type="file"
+                          accept=".pdf,image/png,image/jpeg,image/webp"
+                          className="sr-only"
+                          onChange={(e) => handleDocumentUpload(doc.key, doc.label, e.target.files?.[0] || null)}
+                        />
+                        <span className="flex items-center gap-2 text-xs font-black text-slate-700">
+                          <FileText className="w-4 h-4 text-green-600" />
+                          {doc.label}
+                        </span>
+                        <span className="block mt-1 text-[10px] text-slate-400 truncate">
+                          {uploaded ? uploaded.fileName : 'Click to upload'}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
