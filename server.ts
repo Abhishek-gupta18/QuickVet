@@ -11,6 +11,7 @@ import {
 } from './src/server/schema.js';
 import { signToken } from './src/server/jwt.js';
 import { authenticateToken, requireRole } from './src/server/middleware.js';
+import adminRoutes from './src/server/adminRoutes.js';
 
 const app = express();
 const PORT = 3000;
@@ -562,6 +563,11 @@ app.get('/api/user/me', authenticateToken, async (req: any, res: any) => {
   }
 });
 
+
+// ========================
+// ADMIN ROUTES (mounted as /api/admin/*)
+// ========================
+app.use('/api/admin', adminRoutes);
 
 // ========================
 // HELPER: Build user response with pets & favorites (no passwordHash)

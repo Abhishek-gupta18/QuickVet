@@ -87,6 +87,16 @@ export default function Navbar({
               </button>
             )}
 
+            {currentUser && currentUser.role === 'admin' && (
+              <button
+                onClick={() => handleNavClick('admin_dashboard')}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-all cursor-pointer"
+              >
+                <ClipboardList className="w-4 h-4" />
+                <span>Admin Panel</span>
+              </button>
+            )}
+
             {/* Quick Emergency Button */}
             <button
               onClick={() => handleNavClick('emergency')}
@@ -265,6 +275,20 @@ export default function Navbar({
               >
                 <ClipboardList className="w-5 h-5" />
                 <span>Doctor Portal Dashboard</span>
+              </motion.button>
+            )}
+
+            {currentUser && currentUser.role === 'admin' && (
+              <motion.button
+                onClick={() => handleNavClick('admin_dashboard')}
+                variants={{
+                  open: { opacity: 1, y: 0 },
+                  closed: { opacity: 0, y: -8 },
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-indigo-700 bg-indigo-50 border border-indigo-100 font-bold transition-all text-left"
+              >
+                <ClipboardList className="w-5 h-5" />
+                <span>Admin Command Center</span>
               </motion.button>
             )}
 

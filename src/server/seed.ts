@@ -171,6 +171,8 @@ async function seed() {
       phone: '+91 98765 43210',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
       clinicId: null,
+      accountStatus: 'active',
+      verificationStatus: 'not_applicable',
     },
     {
       id: 'user-vet',
@@ -181,6 +183,28 @@ async function seed() {
       phone: '+91 99887 76655',
       avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=150',
       clinicId: 'clinic-1',
+      accountStatus: 'active',
+      verificationStatus: 'approved',
+      vetRegistrationNumber: 'KA-VET-2019-4521',
+      vetLicenseNumber: 'MCI/KA/2019/00451',
+      vetDegree: 'BVSc & AH - Bangalore Veterinary College',
+      vetSpecializations: ['Dog', 'Cat', 'Emergency Medicine'],
+      vetExperienceYears: 7,
+      vetGovernmentId: 'AADHAR-XXXX-4521',
+      verifiedAt: new Date().toISOString() as any,
+      verifiedBy: 'user-admin',
+    },
+    {
+      id: 'user-admin',
+      email: 'admin@quickvet.in',
+      passwordHash: await bcrypt.hash('admin123', 10),
+      name: 'QuickVet Admin',
+      role: 'admin',
+      phone: '+91 80000 00001',
+      avatarUrl: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Admin',
+      clinicId: null,
+      accountStatus: 'active',
+      verificationStatus: 'not_applicable',
     },
   ]).onConflictDoNothing();
 
@@ -313,7 +337,8 @@ async function seed() {
   console.log('\n✅ Database seeded successfully!');
   console.log('   Demo accounts:');
   console.log('   • Pet Owner:    owner@gmail.com / password');
-  console.log('   • Veterinarian: vet@gmail.com / password\n');
+  console.log('   • Veterinarian: vet@gmail.com / password');
+  console.log('   • Admin:        admin@quickvet.in / admin123\n');
 }
 
 // Execute seed and handle cleanup
