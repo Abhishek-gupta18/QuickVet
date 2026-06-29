@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Landmark, ClipboardCheck, Zap, ShieldCheck, Heart, Upload, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, ClipboardCheck, FileText, Landmark, ShieldCheck, Upload } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { VetDocument } from '../types';
 
@@ -8,14 +8,25 @@ interface VetRegistrationModalProps {
   onSubmitRegistration: (clinicData: any) => Promise<void>;
 }
 
+const inputClass = 'w-full bg-white p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#4CAF50]';
+const labelClass = 'block text-[10px] font-black text-slate-500 uppercase tracking-wide mb-1.5';
+
+const steps = [
+  { title: 'Personal', hint: 'Identity and contact details' },
+  { title: 'Professional', hint: 'License, education, expertise' },
+  { title: 'Clinic', hint: 'Practice and availability' },
+  { title: 'Documents', hint: 'Uploads and final review' },
+];
+
 export default function VetRegistrationModal({
   onClose,
   onSubmitRegistration,
 }: VetRegistrationModalProps) {
+  const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-  const [area, setArea] = useState('Indiranagar'); // Common Bengaluru seed neighborhood
+  const [area, setArea] = useState('Indiranagar');
   const [city, setCity] = useState('Bengaluru');
   const [phone, setPhone] = useState('');
   const [workingHours, setWorkingHours] = useState('09:00 AM - 08:30 PM');
@@ -34,15 +45,11 @@ export default function VetRegistrationModal({
   const [consultationFee, setConsultationFee] = useState('');
   const [languagesSpoken, setLanguagesSpoken] = useState('English, Kannada, Hindi');
   const [weeklyAvailability, setWeeklyAvailability] = useState('Monday to Saturday');
-  
-  // Specialists
   const [spDog, setSpDog] = useState(true);
   const [spCat, setSpCat] = useState(true);
   const [spBird, setSpBird] = useState(false);
   const [spRabbit, setSpRabbit] = useState(false);
   const [spExotics, setSpExotics] = useState(false);
-
-  // Settings
   const [hasEmergency, setHasEmergency] = useState(false);
   const [hasHomeVisit, setHasHomeVisit] = useState(false);
   const [servicesInput, setServicesInput] = useState('General Consultation, Vaccination, Small surgeries, Deworming');
@@ -58,10 +65,7 @@ export default function VetRegistrationModal({
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
 
-  // Auto-generate coordinates reasonably clustered inside Bengaluru to display instantly on our map!
   const generateRandomBengaluruCoordinates = () => {
-    // Bengaluru center is roughly 12.9716, 77.5946
-    // We add a subtle offset
     const randomOffsetLat = (Math.random() - 0.5) * 0.08;
     const randomOffsetLng = (Math.random() - 0.5) * 0.08;
     return {
@@ -99,22 +103,51 @@ export default function VetRegistrationModal({
     }));
   };
 
+  const requiredDocs = ['veterinaryLicense', 'governmentId', 'degreeCertificate', 'registrationCertificate', 'profilePhotograph'];
+  const uploadedDocuments = Object.values(documents).filter(Boolean) as VetDocument[];
+
+  const validateStep = (targetStep = step) => {
+    if (targetStep === 0) {
+      if (!veterinarianName || !dateOfBirth || !gender || !phone || !emailAddress || !residentialAddress || !city || !stateName || !pinCode) {
+        alert('Please complete all required personal information.');
+        return false;
+      }
+    }
+    if (targetStep === 1) {
+      if (!registrationNumber || !licenseNumber || !education || !university || !yearsOfExperience || !consultationFee) {
+        alert('Please complete all required professional information.');
+        return false;
+      }
+    }
+    if (targetStep === 2) {
+      if (!name || !address || !area || !workingHours || !weeklyAvailability || !languagesSpoken || !servicesInput) {
+        alert('Please complete all required clinic and availability details.');
+        return false;
+      }
+    }
+    if (targetStep === 3 && requiredDocs.some((key) => !documents[key])) {
+      alert('Please upload Veterinary License, Government ID, Degree Certificate, Registration Certificate, and Profile Photograph.');
+      return false;
+    }
+    return true;
+  };
+
+  const goNext = () => {
+    if (!validateStep()) return;
+    setStep((current) => Math.min(current + 1, steps.length - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goBack = () => {
+    setStep((current) => Math.max(current - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !address || !phone || !veterinarianName || !licenseNumber || !registrationNumber || !dateOfBirth || !gender || !emailAddress || !residentialAddress || !pinCode || !education || !university || !consultationFee) {
-      alert('Please complete all mandatory personal and professional verification details.');
-      return;
-    }
-
-    const uploadedDocuments = Object.values(documents).filter(Boolean) as VetDocument[];
-    const requiredDocs = ['veterinaryLicense', 'governmentId', 'degreeCertificate', 'registrationCertificate', 'profilePhotograph'];
-    if (requiredDocs.some((key) => !documents[key])) {
-      alert('Please upload Veterinary License, Government ID, Degree Certificate, Registration Certificate, and Profile Photograph.');
-      return;
-    }
+    if (![0, 1, 2, 3].every((index) => validateStep(index))) return;
 
     setLoading(true);
-    // Assemble specialists array
     const specialists: string[] = [];
     if (spDog) specialists.push('Dog');
     if (spCat) specialists.push('Cat');
@@ -123,7 +156,7 @@ export default function VetRegistrationModal({
     if (spExotics) specialists.push('Exotics');
 
     const coordinates = generateRandomBengaluruCoordinates();
-    const services = servicesInput.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const services = servicesInput.split(',').map((service) => service.trim()).filter(Boolean);
 
     const payload = {
       name,
@@ -155,7 +188,7 @@ export default function VetRegistrationModal({
       languagesSpoken,
       weeklyAvailability,
       verificationDocuments: uploadedDocuments,
-      imageUrl: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600' // Generic premium clinic
+      imageUrl: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600',
     };
 
     try {
@@ -165,7 +198,7 @@ export default function VetRegistrationModal({
         particleCount: 100,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#58B368', '#BFE7C4', '#4CAF50']
+        colors: ['#58B368', '#BFE7C4', '#4CAF50'],
       });
     } catch (err) {
       alert('Clinic registration failed. Check container database logs.');
@@ -174,451 +207,269 @@ export default function VetRegistrationModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-green-50 flex flex-col h-[85vh]">
-        
-        {/* Banner header top */}
-        <div className="bg-gradient-to-r from-green-600 via-[#4CAF50] to-[#BFE7C4] px-6 py-5 text-white flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Landmark className="w-6 h-6 animate-pulse" />
-            <div>
-              <h3 className="font-display font-black text-lg md:text-xl">Professional Verification Form</h3>
-              <p className="text-white/80 text-xs mt-0.5">Mandatory credential review before veterinarian dashboard access</p>
-            </div>
+  if (registered) {
+    return (
+      <div className="min-h-[78vh] bg-[#F4FBF3] px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-3xl mx-auto bg-white border border-green-100 rounded-3xl p-8 sm:p-10 text-center shadow-sm">
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <ClipboardCheck className="w-10 h-10" />
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 bg-black/10 hover:bg-black/25 rounded-xl text-white transition-all cursor-pointer"
-          >
-            <X className="w-5 h-5" />
+          <h2 className="mt-5 font-display font-black text-3xl text-slate-900">Verification submitted</h2>
+          <p className="mt-2 text-sm text-slate-500 max-w-xl mx-auto">
+            Your professional profile is marked Pending Verification. The admin team can now review your license, identity proof, degree, registration certificate, and photographs.
+          </p>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left text-sm text-slate-600 space-y-2">
+            <p><b>Clinic:</b> {name}</p>
+            <p><b>Location:</b> {area}, {city}</p>
+            <p><b>Contact:</b> {phone}</p>
+            <p><b>Documents:</b> {uploadedDocuments.length} uploaded</p>
+          </div>
+          <button onClick={onClose} className="mt-7 px-8 py-3 bg-[#4CAF50] hover:bg-green-700 text-white font-extrabold rounded-xl text-sm transition-all">
+            Go to locked dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-[78vh] bg-[#F4FBF3]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-xl bg-green-50 border border-green-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-green-700">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Mandatory Verification
+            </span>
+            <h1 className="mt-3 font-display text-3xl sm:text-4xl font-black text-slate-900">Professional Verification Form</h1>
+            <p className="mt-2 text-sm text-slate-500 max-w-2xl">
+              Complete this step-by-step form to submit your own clinic, license, identity, education, and availability details for admin approval.
+            </p>
+          </div>
+          <button onClick={onClose} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 hover:border-green-300">
+            <ArrowLeft className="w-4 h-4" />
+            Exit
           </button>
         </div>
 
-        {registered ? (
-          /* Success confirmation */
-          <div className="p-8 text-center space-y-5 my-auto">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
-              <ClipboardCheck className="w-10 h-10 animate-bounce" />
-            </div>
-            <h4 className="font-display font-black text-2xl text-gray-900">Congratulations Doctor!</h4>
-            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-150/45 text-left max-w-md mx-auto space-y-1 text-xs text-gray-600">
-              <p className="font-black text-gray-800 text-sm pb-1.5 border-b border-slate-200">Vet Details Saved Successfully</p>
-              <p className="pt-1.5">🔬 <b>Clinic Station:</b> {name}</p>
-              <p>📍 <b>Map neighborhood:</b> {area}, {city}</p>
-              <p>📞 <b>Helpline:</b> {phone}</p>
-              <p>📎 <b>Verification files:</b> {Object.values(documents).filter(Boolean).length} uploaded</p>
-              <p className="text-[#4CAF50] font-black mt-1">● Sent to admin verification queue before public activation.</p>
-            </div>
-            <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              Your professional profile is marked Pending Verification. QuickVet admins can now inspect your license, identity proof, degree, registration certificate, and photos before approval.
-            </p>
-            <button
-              onClick={onClose}
-              className="px-8 py-3 bg-[#4CAF50] hover:bg-green-700 text-white font-extrabold rounded-xl text-sm transition-all cursor-pointer"
-            >
-              Back to Home page
-            </button>
-          </div>
-        ) : (
-          /* Registration Form split in two panels: Benefits vs Inputs Form */
-          <div className="flex-grow overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-12 gap-8">
-            
-            {/* Left Column: Benefits (4/12 cols) */}
-            <div className="md:col-span-4 bg-green-50/50 p-5 rounded-2xl border border-green-100/30 text-left space-y-4 max-h-[60vh] overflow-y-auto">
-              <span className="text-[10px] uppercase font-black text-[#4CAF50] bg-white/80 py-1 px-2 rounded-md shadow-inner">
-                Network Perks
-              </span>
-              <h4 className="font-display font-bold text-gray-800 text-base">Are You a Veterinarian?</h4>
-              
-              <ul className="space-y-4 text-xs text-gray-600 leading-normal">
-                <li className="flex gap-2 items-start">
-                  <div className="bg-green-600/10 p-1 rounded-md text-green-700 mt-0.5">
-                    <Zap className="w-3.5 h-3.5 fill-green-700" />
-                  </div>
-                  <div>
-                    <b>Supercharged Visibility</b>
-                    <span className="block text-[10px] text-gray-400">Put your practice directly in front of thousands of local pet parents.</span>
-                  </div>
-                </li>
-
-                <li className="flex gap-2 items-start">
-                  <div className="bg-emerald-500/10 p-1 rounded-md text-emerald-600 mt-0.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <b>Red Alert Trauma calls</b>
-                    <span className="block text-[10px] text-gray-400">Receive verified critical emergency request files filtered in your local area radius.</span>
-                  </div>
-                </li>
-
-                <li className="flex gap-2 items-start">
-                  <div className="bg-lime-500/10 p-1 rounded-md text-lime-700 mt-0.5">
-                    <Heart className="w-3.5 h-3.5 fill-lime-600 text-lime-600" />
-                  </div>
-                  <div>
-                    <b>Grow Local Clientele</b>
-                    <span className="block text-[10px] text-gray-400">Manage digital slot bookings and home doctor visitation requests with easy approvals.</span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            {/* Right Column: Inputs fields Form (8/12 cols) */}
-            <form onSubmit={handleSubmit} className="md:col-span-8 space-y-4 text-left">
-              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50">Personal Information</h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Veterinarian Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dr. Neha Kapoor"
-                    value={veterinarianName}
-                    onChange={(e) => setVeterinarianName(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Date of Birth *</label>
-                  <input
-                    type="date"
-                    required
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Gender *</label>
-                  <select
-                    required
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50] h-[38px] font-semibold"
-                  >
-                    <option value="">Select</option>
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                    <option value="Non-binary">Non-binary</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                  </select>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <aside className="lg:col-span-3 bg-white rounded-3xl border border-green-100 shadow-sm p-5 lg:sticky lg:top-24">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+              <div className="w-11 h-11 rounded-2xl bg-green-600 text-white flex items-center justify-center">
+                <Landmark className="w-5 h-5" />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="doctor@clinic.com"
-                    value={emailAddress}
-                    onChange={(e) => setEmailAddress(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Contact Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="e.g. +91 98765 43210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">PIN Code *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="560038"
-                    value={pinCode}
-                    onChange={(e) => setPinCode(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Residential Address *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="House, street, locality"
-                    value={residentialAddress}
-                    onChange={(e) => setResidentialAddress(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">City *</label>
-                  <input
-                    type="text"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">State *</label>
-                  <input type="text" required value={stateName} onChange={(e) => setStateName(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-              </div>
-
-              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50 pt-2">Professional Information</h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Veterinary Registration No. *</label>
-                  <input type="text" required placeholder="e.g. KVC-2024-77112" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Medical License No. *</label>
-                  <input type="text" required placeholder="e.g. VCI-MED-8821" value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Experience *</label>
-                  <input type="text" required placeholder="e.g. 8 years" value={yearsOfExperience} onChange={(e) => setYearsOfExperience(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Educational Qualifications *</label>
-                  <input type="text" required placeholder="BVSc & AH, MVSc, etc." value={education} onChange={(e) => setEducation(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">University / Institution *</label>
-                  <input type="text" required placeholder="University name" value={university} onChange={(e) => setUniversity(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Current Clinic / Hospital Name *</label>
-                  <input type="text" required placeholder="Enter your own clinic or hospital name" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Consultation Fee *</label>
-                  <input type="text" required placeholder="e.g. Rs. 600" value={consultationFee} onChange={(e) => setConsultationFee(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
-                </div>
-              </div>
-
               <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Biography / Clinic Description</label>
-                <textarea
-                  rows={2}
-                  placeholder="State your specialized diagnostics equipment, ICU capabilities, and clinical mission statements..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50] leading-normal"
-                />
+                <p className="font-display font-black text-slate-900">Vet Onboarding</p>
+                <p className="text-[11px] text-slate-500">Dashboard unlocks after approval</p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Area / Neighborhood Landmark *</label>
-                  <select
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50] h-[38px] font-semibold"
+            <div className="mt-5 space-y-2">
+              {steps.map((item, index) => {
+                const active = step === index;
+                const complete = step > index;
+                return (
+                  <button
+                    type="button"
+                    key={item.title}
+                    onClick={() => {
+                      if (index <= step || validateStep(step)) setStep(index);
+                    }}
+                    className={`w-full flex items-start gap-3 rounded-2xl p-3 text-left transition-colors ${active ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600 hover:bg-green-50'}`}
                   >
-                    <option value="Indiranagar">Indiranagar</option>
-                    <option value="Domlur">Domlur</option>
-                    <option value="Koramangala">Koramangala</option>
-                    <option value="Whitefield">Whitefield</option>
-                    <option value="HSR Layout">HSR Layout</option>
-                    <option value="Hebbal">Hebbal</option>
-                    <option value="Jayanagar">Jayanagar</option>
-                  </select>
-                </div>
+                    <span className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black ${active ? 'bg-white text-slate-900' : complete ? 'bg-green-600 text-white' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                      {complete ? <CheckCircle2 className="w-3.5 h-3.5" /> : index + 1}
+                    </span>
+                    <span>
+                      <span className="block text-xs font-black">{item.title}</span>
+                      <span className={`block text-[10px] ${active ? 'text-white/70' : 'text-slate-400'}`}>{item.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
 
+          <form onSubmit={handleSubmit} className="lg:col-span-9 bg-white rounded-3xl border border-green-100 shadow-sm p-5 sm:p-7 space-y-6">
+            {step === 0 && (
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Clinic City</label>
-                  <input
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-slate-100 p-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none outline-none font-semibold text-slate-500 cursor-not-allowed"
-                  />
+                  <h2 className="font-display text-2xl font-black text-slate-900">Personal Information</h2>
+                  <p className="text-sm text-slate-500">These details confirm the veterinarian’s legal identity and contact route.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Full Name *"><input className={inputClass} value={veterinarianName} onChange={(e) => setVeterinarianName(e.target.value)} placeholder="Dr. Neha Kapoor" /></Field>
+                  <Field label="Date of Birth *"><input type="date" className={inputClass} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} /></Field>
+                  <Field label="Gender *">
+                    <select className={inputClass} value={gender} onChange={(e) => setGender(e.target.value)}>
+                      <option value="">Select gender</option>
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                      <option value="Non-binary">Non-binary</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Contact Number *"><input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" /></Field>
+                  <Field label="Email Address *"><input type="email" className={inputClass} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder="doctor@clinic.com" /></Field>
+                  <Field label="PIN Code *"><input className={inputClass} value={pinCode} onChange={(e) => setPinCode(e.target.value)} placeholder="560038" /></Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Residential Address *"><input className={inputClass} value={residentialAddress} onChange={(e) => setResidentialAddress(e.target.value)} placeholder="House, street, locality" /></Field>
+                  <Field label="City *"><input className={inputClass} value={city} onChange={(e) => setCity(e.target.value)} /></Field>
+                  <Field label="State *"><input className={inputClass} value={stateName} onChange={(e) => setStateName(e.target.value)} /></Field>
                 </div>
               </div>
+            )}
 
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Clinic Address *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. 10, Stage 2, Domlur Double Rd, Phase 1, Indiranagar, Bengaluru, 560038"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {step === 1 && (
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Working Hours *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 9:00 AM - 9:00 PM / 24 Hours Open"
-                    value={workingHours}
-                    onChange={(e) => setWorkingHours(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
+                  <h2 className="font-display text-2xl font-black text-slate-900">Professional Information</h2>
+                  <p className="text-sm text-slate-500">Add registration, license, education, fee, languages, and species focus.</p>
                 </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Weekly Availability *</label>
-                  <input
-                    type="text"
-                    required
-                    value={weeklyAvailability}
-                    onChange={(e) => setWeeklyAvailability(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Veterinary Registration No. *"><input className={inputClass} value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="KVC-2024-77112" /></Field>
+                  <Field label="Medical License No. *"><input className={inputClass} value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} placeholder="VCI-MED-8821" /></Field>
+                  <Field label="Experience *"><input className={inputClass} value={yearsOfExperience} onChange={(e) => setYearsOfExperience(e.target.value)} placeholder="8 years" /></Field>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Languages Spoken *</label>
-                  <input
-                    type="text"
-                    required
-                    value={languagesSpoken}
-                    onChange={(e) => setLanguagesSpoken(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Educational Qualifications *"><input className={inputClass} value={education} onChange={(e) => setEducation(e.target.value)} placeholder="BVSc & AH, MVSc" /></Field>
+                  <Field label="University / Institution *"><input className={inputClass} value={university} onChange={(e) => setUniversity(e.target.value)} placeholder="University name" /></Field>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Services List (Comma Separated)</label>
-                  <input
-                    type="text"
-                    required
-                    value={servicesInput}
-                    onChange={(e) => setServicesInput(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Consultation Fee *"><input className={inputClass} value={consultationFee} onChange={(e) => setConsultationFee(e.target.value)} placeholder="Rs. 600" /></Field>
+                  <Field label="Languages Spoken *"><input className={inputClass} value={languagesSpoken} onChange={(e) => setLanguagesSpoken(e.target.value)} /></Field>
                 </div>
-              </div>
-
-              {/* Checkboxes for services capabilities & Specialists */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 pb-1">
-                <div className="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide">Facilities Available</label>
-                  <div className="flex flex-col gap-1 text-[11px] font-semibold text-gray-600">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasEmergency}
-                        onChange={(e) => setHasEmergency(e.target.checked)}
-                        className="rounded text-[#4CAF50]"
-                      />
-                      <span>Emergency Trauma Unit (24x7)</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasHomeVisit}
-                        onChange={(e) => setHasHomeVisit(e.target.checked)}
-                        className="rounded text-[#4CAF50]"
-                      />
-                      <span>Doctor Home Checkup Visits</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide">Species Specialists</label>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-semibold text-gray-600">
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="checkbox" checked={spDog} onChange={(e) => setSpDog(e.target.checked)} />
-                      <span>Dogs</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="checkbox" checked={spCat} onChange={(e) => setSpCat(e.target.checked)} />
-                      <span>Cats</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="checkbox" checked={spBird} onChange={(e) => setSpBird(e.target.checked)} />
-                      <span>Birds / Avian</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="checkbox" checked={spRabbit} onChange={(e) => setSpRabbit(e.target.checked)} />
-                      <span>Rabbits</span>
-                    </label>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className={labelClass}>Areas of Specialization</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-bold text-slate-600">
+                    <Toggle label="Small Animals" checked={spDog} onChange={setSpDog} />
+                    <Toggle label="Cats" checked={spCat} onChange={setSpCat} />
+                    <Toggle label="Birds" checked={spBird} onChange={setSpBird} />
+                    <Toggle label="Rabbits" checked={spRabbit} onChange={setSpRabbit} />
+                    <Toggle label="Exotic Pets" checked={spExotics} onChange={setSpExotics} />
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-green-700" />
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-600 uppercase tracking-wide">Verification Documents *</label>
-                    <p className="text-[10px] text-gray-400">PDF, PNG, or JPG files. Admin can open these from the dashboard.</p>
+            {step === 2 && (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="font-display text-2xl font-black text-slate-900">Clinic and Availability</h2>
+                  <p className="text-sm text-slate-500">Use your own clinic or hospital name. This becomes visible only after admin approval.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Current Clinic / Hospital Name *"><input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your own clinic name" /></Field>
+                  <Field label="Area / Neighborhood *">
+                    <select className={inputClass} value={area} onChange={(e) => setArea(e.target.value)}>
+                      <option value="Indiranagar">Indiranagar</option>
+                      <option value="Domlur">Domlur</option>
+                      <option value="Koramangala">Koramangala</option>
+                      <option value="Whitefield">Whitefield</option>
+                      <option value="HSR Layout">HSR Layout</option>
+                      <option value="Hebbal">Hebbal</option>
+                      <option value="Jayanagar">Jayanagar</option>
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Clinic Address *"><input className={inputClass} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Full clinic postal address" /></Field>
+                <Field label="Biography / Clinic Description"><textarea rows={3} className={inputClass} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Diagnostics equipment, ICU capability, clinical mission..." /></Field>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Working Hours *"><input className={inputClass} value={workingHours} onChange={(e) => setWorkingHours(e.target.value)} /></Field>
+                  <Field label="Weekly Availability *"><input className={inputClass} value={weeklyAvailability} onChange={(e) => setWeeklyAvailability(e.target.value)} /></Field>
+                  <Field label="Services *"><input className={inputClass} value={servicesInput} onChange={(e) => setServicesInput(e.target.value)} /></Field>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className={labelClass}>Service Facilities</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold text-slate-600">
+                    <Toggle label="Emergency Trauma Unit" checked={hasEmergency} onChange={setHasEmergency} />
+                    <Toggle label="Home Visit Service" checked={hasHomeVisit} onChange={setHasHomeVisit} />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-5">
+                <div>
+                  <h2 className="font-display text-2xl font-black text-slate-900">Documents and Review</h2>
+                  <p className="text-sm text-slate-500">Upload required verification documents before submitting to the admin queue.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
-                    { key: 'veterinaryLicense', label: 'Veterinary License' },
-                    { key: 'governmentId', label: 'Government ID Proof' },
-                    { key: 'degreeCertificate', label: 'Degree Certificate' },
-                    { key: 'registrationCertificate', label: 'Registration Certificate' },
-                    { key: 'profilePhotograph', label: 'Profile Photograph' },
+                    { key: 'veterinaryLicense', label: 'Veterinary License *' },
+                    { key: 'governmentId', label: 'Government ID Proof *' },
+                    { key: 'degreeCertificate', label: 'Degree Certificate *' },
+                    { key: 'registrationCertificate', label: 'Registration Certificate *' },
+                    { key: 'profilePhotograph', label: 'Profile Photograph *' },
                     { key: 'clinicPhotograph', label: 'Clinic Photograph (Optional)' },
                     { key: 'additionalCertifications', label: 'Additional Certifications (Optional)' },
                   ].map((doc) => {
                     const uploaded = documents[doc.key];
                     return (
-                      <label key={doc.key} className="block bg-white border border-slate-200 rounded-2xl p-3 cursor-pointer hover:border-green-300 transition-colors">
-                        <input
-                          type="file"
-                          accept=".pdf,image/png,image/jpeg,image/webp"
-                          className="sr-only"
-                          onChange={(e) => handleDocumentUpload(doc.key, doc.label, e.target.files?.[0] || null)}
-                        />
-                        <span className="flex items-center gap-2 text-xs font-black text-slate-700">
-                          <FileText className="w-4 h-4 text-green-600" />
+                      <label key={doc.key} className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 cursor-pointer hover:border-green-300 transition-colors">
+                        <input type="file" accept=".pdf,image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => handleDocumentUpload(doc.key, doc.label.replace(' *', ''), e.target.files?.[0] || null)} />
+                        <span className="flex items-center gap-2 text-sm font-black text-slate-800">
+                          <FileText className="w-4 h-4 text-green-700" />
                           {doc.label}
                         </span>
-                        <span className="block mt-1 text-[10px] text-slate-400 truncate">
-                          {uploaded ? uploaded.fileName : 'Click to upload'}
-                        </span>
+                        <span className="mt-1 block truncate text-xs text-slate-400">{uploaded ? uploaded.fileName : 'Click to upload PDF, PNG, JPG, or WEBP'}</span>
                       </label>
                     );
                   })}
                 </div>
+                <div className="rounded-2xl border border-green-100 bg-green-50 p-4 text-sm text-green-900">
+                  <div className="flex items-start gap-3">
+                    <Upload className="w-5 h-5 mt-0.5 text-green-700" />
+                    <p>
+                      After submission, your profile is marked Pending Verification. The dashboard remains locked, appointments and emergency requests stay disabled, and your profile is hidden from pet owners until admin approval.
+                    </p>
+                  </div>
+                </div>
               </div>
+            )}
 
-              {/* Register button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-[#4CAF50] hover:bg-green-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-green-100 flex items-center justify-center gap-1 cursor-pointer"
-              >
-                {loading ? 'Transmitting credentials...' : 'Submit for Admin Verification'}
+            <div className="pt-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <button type="button" onClick={goBack} disabled={step === 0} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-black text-slate-600 disabled:opacity-45 disabled:cursor-not-allowed">
+                <ArrowLeft className="w-4 h-4" />
+                Back
               </button>
-            </form>
-
-          </div>
-        )}
+              {step < steps.length - 1 ? (
+                <button type="button" onClick={goNext} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4CAF50] px-6 py-3 text-xs font-black text-white hover:bg-green-700">
+                  Next
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4CAF50] px-6 py-3 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60">
+                  {loading ? 'Submitting...' : 'Submit for Admin Verification'}
+                  <ClipboardCheck className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
 
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className={labelClass}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className={`flex items-center gap-2 rounded-xl border p-3 cursor-pointer ${checked ? 'border-green-300 bg-white text-green-800' : 'border-slate-200 bg-white text-slate-600'}`}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <span>{label}</span>
+    </label>
+  );
+}

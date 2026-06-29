@@ -90,7 +90,6 @@ export default function App() {
   const [authModalType, setAuthModalType] = useState<'login' | 'signup' | null>(null);
   const [bookingClinic, setBookingClinic] = useState<VetClinic | null>(null);
   const [reviewsClinic, setReviewsClinic] = useState<VetClinic | null>(null);
-  const [showVetRegisterModal, setShowVetRegisterModal] = useState<boolean>(false);
 
   // Search & Filtration States
   const [searchName, setSearchName] = useState<string>('');
@@ -205,9 +204,10 @@ export default function App() {
     if (user.role === 'admin') {
       setActiveTab('admin_dashboard');
     } else if (user.role === 'veterinarian') {
-      setActiveTab('vet_dashboard');
       if (!user.clinicId) {
-        setShowVetRegisterModal(true);
+        setActiveTab('vet_register');
+      } else {
+        setActiveTab('vet_dashboard');
       }
     } else {
       setActiveTab('user_dashboard');
@@ -601,7 +601,7 @@ export default function App() {
                 <h3 className="font-display font-black text-2xl sm:text-3xl tracking-normal">Are You a Practicing Veterinarian?</h3>
                 <p className="text-white/80 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">Join our verified directory network. Put your animal hospital or private consultancy on the interactive maps.</p>
                 <div className="pt-2">
-                  <button onClick={() => setShowVetRegisterModal(true)}
+                  <button onClick={() => setActiveTab('vet_register')}
                     className="px-8 py-3.5 bg-white text-green-700 font-extrabold rounded-2xl shadow-lg active:scale-95 transition-all text-sm cursor-pointer select-none">
                     Register Your Clinic Station
                   </button>
@@ -833,9 +833,6 @@ export default function App() {
       {reviewsClinic && (
         <ReviewsModal clinic={reviewsClinic} currentUser={currentUser} onClose={() => setReviewsClinic(null)}
           onOpenAuth={(type) => setAuthModalType(type)} />
-      )}
-      {showVetRegisterModal && (
-        <VetRegistrationModal onClose={() => setShowVetRegisterModal(false)} onSubmitRegistration={handleSubmitVetRegistration} />
       )}
     </div>
   );
