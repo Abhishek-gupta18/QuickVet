@@ -206,6 +206,9 @@ export default function App() {
       setActiveTab('admin_dashboard');
     } else if (user.role === 'veterinarian') {
       setActiveTab('vet_dashboard');
+      if (!user.clinicId) {
+        setShowVetRegisterModal(true);
+      }
     } else {
       setActiveTab('user_dashboard');
     }
@@ -288,7 +291,21 @@ export default function App() {
       const updatedUser = { ...currentUser, clinicId: createdClinic.id };
       setCurrentUser(updatedUser);
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(updatedUser));
+      setActiveTab('vet_dashboard');
     }
+  };
+
+  const handleUpdateClinicVerification = async (clinicId: string, status: VetClinic['verificationStatus'] | 'suspended') => {
+    const res = await authFetch(`/api/clinics/${clinicId}/verification`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    });
+    if (res.status === 401 || res.status === 403) {
+      handleForceLogout();
+      return;
+    }
+    if (!res.ok) console.error('Failed to update verification status');
+    await pullConfiguration();
   };
 
 
@@ -322,7 +339,8 @@ export default function App() {
 
 
   // ===== Clinic Filtering Logic =====
-  const filteredClinics = clinics.filter((clinic) => {
+  const publicClinics = clinics.filter((clinic) => clinic.verificationStatus === 'approved');
+  const filteredClinics = publicClinics.filter((clinic) => {
     if (searchName && !clinic.name.toLowerCase().includes(searchName.toLowerCase())) return false;
     if (searchArea && !clinic.area.toLowerCase().includes(searchArea.toLowerCase())) return false;
     if (filterOpenNow && !clinic.isOpenNow) return false;
@@ -355,7 +373,7 @@ export default function App() {
         {activeTab === 'home' && (
           <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-grow">
             <Hero
-              clinics={clinics.slice(0, 5)}
+              clinics={publicClinics.slice(0, 5)}
               userLocation={userLocation}
               onSelectClinic={(id) => { setSelectedClinicId(id); setActiveTab('find_vets'); }}
               onNavigateToFind={() => setActiveTab('find_vets')}
@@ -685,7 +703,7 @@ export default function App() {
               <p className="text-gray-500 text-xs sm:text-sm">Real stories from local companion pet parents in India.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {clinics.map(clinic => (
+              {publicClinics.map(clinic => (
                 <div key={clinic.id} className="p-5 bg-white border border-gray-100 rounded-3xl space-y-3 shadow-sm hover:border-[#58B368]/40 transition-colors">
                   <div className="flex justify-between items-start">
                     <div>
@@ -773,6 +791,7 @@ export default function App() {
                 clinics={clinics}
                 bookings={bookings}
                 emergencies={emergencies}
+                onUpdateClinicVerification={handleUpdateClinicVerification}
               />
             </motion.div>
           ) : (

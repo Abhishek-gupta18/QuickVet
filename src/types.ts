@@ -47,7 +47,7 @@ export interface VetClinic {
   workingHours: string;
   services: string[];
   verificationDocuments?: VetDocument[];
-  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'needs_documents' | 'hold';
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'needs_documents' | 'hold' | 'suspended';
   licenseNumber?: string;
   veterinarianName?: string;
   yearsOfExperience?: string;

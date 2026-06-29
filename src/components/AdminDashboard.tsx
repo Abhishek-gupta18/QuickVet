@@ -32,6 +32,7 @@ interface AdminDashboardProps {
   clinics: VetClinic[];
   bookings: Booking[];
   emergencies: EmergencyRequest[];
+  onUpdateClinicVerification: (clinicId: string, status: NonNullable<VetClinic['verificationStatus']>) => Promise<void>;
 }
 
 type AdminTab =
@@ -128,7 +129,20 @@ function mockDocument(label: string, fileName: string, fileType: string): VetDoc
   };
 }
 
-export default function AdminDashboard({ currentUser, clinics, bookings, emergencies }: AdminDashboardProps) {
+function formatVerificationStatus(status: VetClinic['verificationStatus']): string {
+  const labels: Record<NonNullable<VetClinic['verificationStatus']>, string> = {
+    pending: 'Pending',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    needs_documents: 'Needs Documents',
+    hold: 'Hold',
+    suspended: 'Suspended',
+  };
+
+  return labels[status || 'pending'];
+}
+
+export default function AdminDashboard({ currentUser, clinics, bookings, emergencies, onUpdateClinicVerification }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<{ vetName: string; document: VetDocument } | null>(null);
@@ -138,12 +152,13 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
       .filter((clinic) => clinic.verificationDocuments && clinic.verificationDocuments.length > 0)
       .map((clinic, index) => ({
         id: `clinic-ver-${clinic.id}`,
+        clinicId: clinic.id,
         doctor: clinic.veterinarianName || `Veterinarian for ${clinic.name}`,
         license: clinic.licenseNumber || 'License pending entry',
         clinic: clinic.name,
         city: clinic.city,
         submitted: clinic.verificationDocuments?.[0]?.uploadedAt?.split('T')[0] || '2026-06-28',
-        status: clinic.verificationStatus === 'approved' ? 'Approved' : 'Pending',
+        status: formatVerificationStatus(clinic.verificationStatus || 'pending'),
         progress: Math.min(96, 44 + (clinic.verificationDocuments?.length || 0) * 14),
         assignedTo: 'Asha Menon',
         specialty: clinic.specialists.join(', '),
@@ -211,6 +226,9 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
       Pending: 'bg-amber-50 text-amber-700 border-amber-200',
       Hold: 'bg-slate-100 text-slate-700 border-slate-200',
       'Needs Documents': 'bg-rose-50 text-rose-700 border-rose-200',
+      Approved: 'bg-green-50 text-green-700 border-green-200',
+      Rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+      Suspended: 'bg-slate-100 text-slate-700 border-slate-200',
       approved: 'bg-green-50 text-green-700 border-green-200',
       completed: 'bg-green-50 text-green-700 border-green-200',
       pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -224,6 +242,11 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
         {status}
       </span>
     );
+  };
+
+  const handleVerificationAction = async (clinicId: string | undefined, status: NonNullable<VetClinic['verificationStatus']>) => {
+    if (!clinicId) return;
+    await onUpdateClinicVerification(clinicId, status);
   };
 
   return (
@@ -424,10 +447,34 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
                           </div>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-1 gap-2 xl:w-44">
-                          <button className="px-3 py-2 bg-green-600 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5"><CheckCircle2 className="w-4 h-4" />Approve</button>
-                          <button className="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5"><Clock className="w-4 h-4" />Hold</button>
-                          <button className="px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5"><Bell className="w-4 h-4" />Request Docs</button>
-                          <button className="px-3 py-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5"><XCircle className="w-4 h-4" />Reject</button>
+                          <button
+                            disabled={!('clinicId' in app)}
+                            onClick={() => handleVerificationAction('clinicId' in app ? app.clinicId : undefined, 'approved')}
+                            className="px-3 py-2 bg-green-600 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />Approve
+                          </button>
+                          <button
+                            disabled={!('clinicId' in app)}
+                            onClick={() => handleVerificationAction('clinicId' in app ? app.clinicId : undefined, 'hold')}
+                            className="px-3 py-2 bg-slate-900 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <Clock className="w-4 h-4" />Hold
+                          </button>
+                          <button
+                            disabled={!('clinicId' in app)}
+                            onClick={() => handleVerificationAction('clinicId' in app ? app.clinicId : undefined, 'needs_documents')}
+                            className="px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <Bell className="w-4 h-4" />Request Docs
+                          </button>
+                          <button
+                            disabled={!('clinicId' in app)}
+                            onClick={() => handleVerificationAction('clinicId' in app ? app.clinicId : undefined, 'rejected')}
+                            className="px-3 py-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <XCircle className="w-4 h-4" />Reject
+                          </button>
                         </div>
                       </div>
                     </div>

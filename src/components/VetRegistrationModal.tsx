@@ -20,8 +20,20 @@ export default function VetRegistrationModal({
   const [phone, setPhone] = useState('');
   const [workingHours, setWorkingHours] = useState('09:00 AM - 08:30 PM');
   const [veterinarianName, setVeterinarianName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [residentialAddress, setResidentialAddress] = useState('');
+  const [stateName, setStateName] = useState('Karnataka');
+  const [pinCode, setPinCode] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [education, setEducation] = useState('');
+  const [university, setUniversity] = useState('');
   const [yearsOfExperience, setYearsOfExperience] = useState('');
+  const [consultationFee, setConsultationFee] = useState('');
+  const [languagesSpoken, setLanguagesSpoken] = useState('English, Kannada, Hindi');
+  const [weeklyAvailability, setWeeklyAvailability] = useState('Monday to Saturday');
   
   // Specialists
   const [spDog, setSpDog] = useState(true);
@@ -35,10 +47,13 @@ export default function VetRegistrationModal({
   const [hasHomeVisit, setHasHomeVisit] = useState(false);
   const [servicesInput, setServicesInput] = useState('General Consultation, Vaccination, Small surgeries, Deworming');
   const [documents, setDocuments] = useState<Record<string, VetDocument | null>>({
-    medicalLicense: null,
+    veterinaryLicense: null,
     governmentId: null,
     degreeCertificate: null,
-    clinicProof: null,
+    registrationCertificate: null,
+    profilePhotograph: null,
+    clinicPhotograph: null,
+    additionalCertifications: null,
   });
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -86,14 +101,15 @@ export default function VetRegistrationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !address || !phone || !veterinarianName || !licenseNumber) {
-      alert('Mandatory details: Doctor Name, License Number, Clinic Name, Address, and Phone are required.');
+    if (!name || !address || !phone || !veterinarianName || !licenseNumber || !registrationNumber || !dateOfBirth || !gender || !emailAddress || !residentialAddress || !pinCode || !education || !university || !consultationFee) {
+      alert('Please complete all mandatory personal and professional verification details.');
       return;
     }
 
     const uploadedDocuments = Object.values(documents).filter(Boolean) as VetDocument[];
-    if (uploadedDocuments.length < 3) {
-      alert('Please upload at least Medical License, Government ID, and Degree Certificate for admin verification.');
+    const requiredDocs = ['veterinaryLicense', 'governmentId', 'degreeCertificate', 'registrationCertificate', 'profilePhotograph'];
+    if (requiredDocs.some((key) => !documents[key])) {
+      alert('Please upload Veterinary License, Government ID, Degree Certificate, Registration Certificate, and Profile Photograph.');
       return;
     }
 
@@ -124,8 +140,20 @@ export default function VetRegistrationModal({
       workingHours,
       services,
       veterinarianName,
+      dateOfBirth,
+      gender,
+      emailAddress,
+      residentialAddress,
+      stateName,
+      pinCode,
+      registrationNumber,
       licenseNumber,
+      education,
+      university,
       yearsOfExperience,
+      consultationFee,
+      languagesSpoken,
+      weeklyAvailability,
       verificationDocuments: uploadedDocuments,
       imageUrl: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&q=80&w=600' // Generic premium clinic
     };
@@ -155,8 +183,8 @@ export default function VetRegistrationModal({
           <div className="flex items-center gap-2">
             <Landmark className="w-6 h-6 animate-pulse" />
             <div>
-              <h3 className="font-display font-black text-lg md:text-xl">Enlist Your Clinic Station</h3>
-              <p className="text-white/80 text-xs mt-0.5">Grow localized clientele and support emergency rescue networks</p>
+              <h3 className="font-display font-black text-lg md:text-xl">Professional Verification Form</h3>
+              <p className="text-white/80 text-xs mt-0.5">Mandatory credential review before veterinarian dashboard access</p>
             </div>
           </div>
           <button
@@ -183,7 +211,7 @@ export default function VetRegistrationModal({
               <p className="text-[#4CAF50] font-black mt-1">● Sent to admin verification queue before public activation.</p>
             </div>
             <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              Your clinic profile and documents are saved. QuickVet admins can now inspect your license, identity proof, degree, and clinic proof before approval.
+              Your professional profile is marked Pending Verification. QuickVet admins can now inspect your license, identity proof, degree, registration certificate, and photos before approval.
             </p>
             <button
               onClick={onClose}
@@ -238,7 +266,7 @@ export default function VetRegistrationModal({
 
             {/* Right Column: Inputs fields Form (8/12 cols) */}
             <form onSubmit={handleSubmit} className="md:col-span-8 space-y-4 text-left">
-              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50">Clinic Details Form</h4>
+              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50">Personal Information</h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -254,57 +282,142 @@ export default function VetRegistrationModal({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Vet Registration No. *</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Date of Birth *</label>
                   <input
-                    type="text"
+                    type="date"
                     required
-                    placeholder="e.g. KVC-2024-77112"
-                    value={licenseNumber}
-                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
                     className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Experience</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 8 years"
-                    value={yearsOfExperience}
-                    onChange={(e) => setYearsOfExperience(e.target.value)}
-                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
-                  />
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Gender *</label>
+                  <select
+                    required
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50] h-[38px] font-semibold"
+                  >
+                    <option value="">Select</option>
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Non-binary">Non-binary</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Clinic Name *</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Email Address *</label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    placeholder="e.g. Cessna Lifeline 2.0"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    placeholder="doctor@clinic.com"
+                    value={emailAddress}
+                    onChange={(e) => setEmailAddress(e.target.value)}
                     className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Clinic Phone *</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Contact Number *</label>
                   <input
                     type="tel"
                     required
-                    placeholder="e.g. +91 80 4369 3333"
+                    placeholder="e.g. +91 98765 43210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">PIN Code *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="560038"
+                    value={pinCode}
+                    onChange={(e) => setPinCode(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Residential Address *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="House, street, locality"
+                    value={residentialAddress}
+                    onChange={(e) => setResidentialAddress(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">State *</label>
+                  <input type="text" required value={stateName} onChange={(e) => setStateName(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+              </div>
+
+              <h4 className="font-display font-black text-gray-800 text-sm border-b pb-1.5 border-green-50 pt-2">Professional Information</h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Veterinary Registration No. *</label>
+                  <input type="text" required placeholder="e.g. KVC-2024-77112" value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Medical License No. *</label>
+                  <input type="text" required placeholder="e.g. VCI-MED-8821" value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Experience *</label>
+                  <input type="text" required placeholder="e.g. 8 years" value={yearsOfExperience} onChange={(e) => setYearsOfExperience(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Educational Qualifications *</label>
+                  <input type="text" required placeholder="BVSc & AH, MVSc, etc." value={education} onChange={(e) => setEducation(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">University / Institution *</label>
+                  <input type="text" required placeholder="University name" value={university} onChange={(e) => setUniversity(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Current Clinic / Hospital Name *</label>
+                  <input type="text" required placeholder="Enter your own clinic or hospital name" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Consultation Fee *</label>
+                  <input type="text" required placeholder="e.g. Rs. 600" value={consultationFee} onChange={(e) => setConsultationFee(e.target.value)} className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]" />
+                </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Short Description Comments</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Biography / Clinic Description</label>
                 <textarea
                   rows={2}
                   placeholder="State your specialized diagnostics equipment, ICU capabilities, and clinical mission statements..."
@@ -333,18 +446,18 @@ export default function VetRegistrationModal({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">City Hub</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Clinic City</label>
                   <input
                     type="text"
-                    readOnly
                     value={city}
+                    onChange={(e) => setCity(e.target.value)}
                     className="w-full bg-slate-100 p-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none outline-none font-semibold text-slate-500 cursor-not-allowed"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Full Clinic Postal address *</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Clinic Address *</label>
                 <input
                   type="text"
                   required
@@ -357,7 +470,7 @@ export default function VetRegistrationModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Working hours schedule</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Working Hours *</label>
                   <input
                     type="text"
                     required
@@ -368,6 +481,29 @@ export default function VetRegistrationModal({
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Weekly Availability *</label>
+                  <input
+                    type="text"
+                    required
+                    value={weeklyAvailability}
+                    onChange={(e) => setWeeklyAvailability(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Languages Spoken *</label>
+                  <input
+                    type="text"
+                    required
+                    value={languagesSpoken}
+                    onChange={(e) => setLanguagesSpoken(e.target.value)}
+                    className="w-full bg-slate-50 p-2.5 border rounded-xl text-xs focus:outline-none focus:border-[#4CAF50]"
+                  />
+                </div>
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Services List (Comma Separated)</label>
                   <input
@@ -439,10 +575,13 @@ export default function VetRegistrationModal({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { key: 'medicalLicense', label: 'Medical License' },
+                    { key: 'veterinaryLicense', label: 'Veterinary License' },
                     { key: 'governmentId', label: 'Government ID Proof' },
-                    { key: 'degreeCertificate', label: 'Degree / Certificate' },
-                    { key: 'clinicProof', label: 'Clinic / Hospital Proof' },
+                    { key: 'degreeCertificate', label: 'Degree Certificate' },
+                    { key: 'registrationCertificate', label: 'Registration Certificate' },
+                    { key: 'profilePhotograph', label: 'Profile Photograph' },
+                    { key: 'clinicPhotograph', label: 'Clinic Photograph (Optional)' },
+                    { key: 'additionalCertifications', label: 'Additional Certifications (Optional)' },
                   ].map((doc) => {
                     const uploaded = documents[doc.key];
                     return (
@@ -472,7 +611,7 @@ export default function VetRegistrationModal({
                 disabled={loading}
                 className="w-full py-3.5 bg-[#4CAF50] hover:bg-green-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-green-100 flex items-center justify-center gap-1 cursor-pointer"
               >
-                {loading ? 'Transmitting credentials...' : 'Register Veterinary Hospital Live'}
+                {loading ? 'Transmitting credentials...' : 'Submit for Admin Verification'}
               </button>
             </form>
 

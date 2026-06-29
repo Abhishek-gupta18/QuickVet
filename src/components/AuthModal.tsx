@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Phone, CheckCircle, HelpCircle } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, CheckCircle } from 'lucide-react';
 import { UserRole, User as UserType } from '../types';
 
 interface AuthModalProps {
@@ -20,7 +20,6 @@ export default function AuthModal({
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('pet_owner');
-  const [clinicId, setClinicId] = useState('clinic-1'); // Default fallback links to Cessna
   
   // Tab panels in signup
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -69,7 +68,7 @@ export default function AuthModal({
     const url = type === 'login' ? `${apiBase}/api/auth/login` : `${apiBase}/api/auth/signup`;
     const payload = type === 'login' 
       ? { email, password }
-      : { email, name, password, role, phone, clinicId: role === 'veterinarian' ? clinicId : undefined };
+      : { email, name, password, role, phone };
 
     try {
       const res = await fetch(url, {
@@ -282,20 +281,9 @@ export default function AuthModal({
               </div>
             )}
 
-            {/* CLINIC SELECTION FOR SIGNUP VETERINARIAN */}
             {type === 'signup' && role === 'veterinarian' && (
-              <div>
-                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Affiliated Clinic Station</label>
-                <select
-                  value={clinicId}
-                  onChange={(e) => setClinicId(e.target.value)}
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-green-400"
-                >
-                  <option value="clinic-1">Cessna Lifeline 24x7 Animal Hospital (Koramangala)</option>
-                  <option value="clinic-2">Crown Vet Premium Clinic (Indiranagar)</option>
-                  <option value="clinic-4">Myra Pet Clinic & Vet Surgery Center (Whitefield)</option>
-                  <option value="clinic-6">Hebbal Animal Emergency Trauma (Hebbal)</option>
-                </select>
+              <div className="rounded-2xl border border-green-100 bg-green-50/70 p-3 text-xs text-green-800 leading-relaxed">
+                After signup, you will complete the mandatory Professional Verification Form for your own clinic or hospital. Your dashboard stays locked until an admin approves your credentials.
               </div>
             )}
 
@@ -334,7 +322,7 @@ export default function AuthModal({
             >
               {loading 
                 ? 'Processing verification...' 
-                : type === 'login' ? 'Let me into QuickVet' : 'Unlock my companion account'}
+                : type === 'login' ? 'Let me into QuickVet' : role === 'veterinarian' ? 'Continue to verification' : 'Unlock my companion account'}
             </button>
 
             {/* SWITCH TOGGLE */}
