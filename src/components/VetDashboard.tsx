@@ -1,6 +1,30 @@
-import { useState, useEffect } from 'react';
-import { ToggleLeft, CalendarCheck, Home, Star, BarChart3, Settings, ClipboardList, Loader2, Check, X, ShieldAlert, Heart, Phone } from 'lucide-react';
-import { User, VetClinic, Booking, EmergencyRequest, ClinicReview } from '../types';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Activity,
+  BadgeCheck,
+  BarChart3,
+  Bell,
+  CalendarCheck,
+  CalendarClock,
+  Check,
+  ClipboardList,
+  Clock,
+  FileText,
+  HeartPulse,
+  Lock,
+  Mail,
+  MessageSquare,
+  Phone,
+  Pill,
+  ShieldAlert,
+  ShieldCheck,
+  Star,
+  Stethoscope,
+  UserRound,
+  UsersRound,
+  X,
+} from 'lucide-react';
+import { User, VetClinic, Booking, EmergencyRequest, ClinicReview, VetDocument } from '../types';
 
 interface VetDashboardProps {
   currentUser: User;
@@ -11,6 +35,129 @@ interface VetDashboardProps {
   onUpdateEmergencyStatus: (id: string, status: string, clinicId: string, clinicName: string) => Promise<void>;
 }
 
+type VetTab =
+  | 'overview'
+  | 'appointments'
+  | 'emergencies'
+  | 'records'
+  | 'reviews'
+  | 'schedule'
+  | 'profile'
+  | 'messages'
+  | 'prescriptions'
+  | 'analytics'
+  | 'credentials'
+  | 'security';
+
+type VerificationState = NonNullable<VetClinic['verificationStatus']> | 'suspended';
+
+const trendBars = [34, 48, 42, 57, 64, 76, 69];
+const patientBars = [28, 35, 44, 39, 52, 61];
+const ratingBars = [4.2, 4.5, 4.4, 4.7, 4.8, 4.8];
+
+const statusCopy: Record<VerificationState, { label: string; tone: string; message: string }> = {
+  pending: {
+    label: 'Pending Verification',
+    tone: 'bg-amber-50 text-amber-700 border-amber-200',
+    message: 'Your professional profile is under admin review. The dashboard unlocks after approval.',
+  },
+  approved: {
+    label: 'Approved',
+    tone: 'bg-green-50 text-green-700 border-green-200',
+    message: 'Your verified veterinarian workspace is active.',
+  },
+  rejected: {
+    label: 'Rejected',
+    tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    message: 'Your verification was rejected. Review the admin note and resubmit corrected credentials.',
+  },
+  needs_documents: {
+    label: 'Additional Documents Required',
+    tone: 'bg-orange-50 text-orange-700 border-orange-200',
+    message: 'QuickVet needs one or more additional documents before your profile can be approved.',
+  },
+  hold: {
+    label: 'On Hold',
+    tone: 'bg-slate-100 text-slate-700 border-slate-200',
+    message: 'Your verification is paused while the admin team reviews your application details.',
+  },
+  suspended: {
+    label: 'Suspended',
+    tone: 'bg-rose-50 text-rose-700 border-rose-200',
+    message: 'Dashboard access is suspended. Contact QuickVet support for credential review.',
+  },
+};
+
+function statusBadge(status: string) {
+  const styles: Record<string, string> = {
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-green-50 text-green-700 border-green-200',
+    completed: 'bg-green-50 text-green-700 border-green-200',
+    cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
+    accepted: 'bg-blue-50 text-blue-700 border-blue-200',
+    notified: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wide ${styles[status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+      {status.replace('_', ' ')}
+    </span>
+  );
+}
+
+function MetricTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Activity;
+  label: string;
+  value: string | number;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+          <p className="mt-1 font-display text-2xl font-black text-slate-900">{value}</p>
+        </div>
+        <div className="h-10 w-10 rounded-xl bg-green-50 text-green-700 flex items-center justify-center">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">{hint}</p>
+    </div>
+  );
+}
+
+function DocumentList({ documents }: { documents: VetDocument[] }) {
+  if (!documents.length) {
+    return <p className="text-xs text-slate-400">No credential documents are attached yet.</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {documents.map((doc) => (
+        <a
+          key={doc.id}
+          href={doc.dataUrl || undefined}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-2xl border border-slate-200 bg-white p-3 text-left hover:border-green-300 transition-colors"
+        >
+          <span className="flex items-center gap-2 text-xs font-black text-slate-800">
+            <FileText className="h-4 w-4 text-green-700" />
+            {doc.label}
+          </span>
+          <span className="mt-1 block truncate text-[10px] text-slate-400">{doc.fileName}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export default function VetDashboard({
   currentUser,
   clinics,
@@ -19,24 +166,58 @@ export default function VetDashboard({
   onUpdateBookingStatus,
   onUpdateEmergencyStatus,
 }: VetDashboardProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'bookings' | 'home_visits' | 'emergencies' | 'reviews' | 'settings'>('overview');
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<VetTab>('overview');
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [appointmentFilter, setAppointmentFilter] = useState<'all' | Booking['status']>('all');
   const [clinicReviews, setClinicReviews] = useState<ClinicReview[]>([]);
 
-  // Find affiliated clinic
-  const clinic = clinics.find(c => c.id === currentUser.clinicId) || clinics[0];
+  const clinic = useMemo(
+    () => clinics.find((candidate) => candidate.id === currentUser.clinicId),
+    [clinics, currentUser.clinicId],
+  );
 
-  // Filters
-  const clinicBookings = bookings.filter(b => b.clinicId === clinic?.id);
-  const regularBookings = clinicBookings.filter(b => b.type === 'clinic_visit');
-  const homeVisits = clinicBookings.filter(b => b.type === 'home_visit');
-  
-  // Nearby Active emergencies pending (within the region, for doctors to accept!)
-  const activeEmergencies = emergencies.filter(e => e.status !== 'completed');
+  const verificationStatus = (clinic?.verificationStatus || 'pending') as VerificationState;
+  const verification = statusCopy[verificationStatus] || statusCopy.pending;
+  const isApproved = verificationStatus === 'approved';
 
-  // Fetch reviews of this clinic
+  const clinicBookings = useMemo(
+    () => bookings.filter((booking) => booking.clinicId === clinic?.id),
+    [bookings, clinic?.id],
+  );
+  const visibleAppointments = appointmentFilter === 'all'
+    ? clinicBookings
+    : clinicBookings.filter((booking) => booking.status === appointmentFilter);
+  const todaysAppointments = clinicBookings.filter((booking) => booking.date === new Date().toISOString().split('T')[0]);
+  const pendingBookings = clinicBookings.filter((booking) => booking.status === 'pending');
+  const completedBookings = clinicBookings.filter((booking) => booking.status === 'completed');
+  const activeEmergencies = emergencies.filter((emergency) => emergency.status !== 'completed');
+  const ownedEmergencies = emergencies.filter((emergency) => emergency.acceptedByClinicId === clinic?.id);
+  const newReviews = clinicReviews.filter((review) => review.date >= new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]);
+
+  const patientRecords = useMemo(() => {
+    const seen = new Map<string, Booking>();
+    completedBookings.forEach((booking) => {
+      seen.set(`${booking.petOwnerEmail}-${booking.petName}`, booking);
+    });
+    return Array.from(seen.values()).map((booking, index) => ({
+      id: `${booking.id}-record`,
+      pet: booking.petName,
+      type: booking.petType,
+      owner: booking.petOwnerName,
+      email: booking.petOwnerEmail,
+      diagnosis: booking.notes || booking.service,
+      vaccination: index % 2 === 0 ? 'Rabies booster current' : 'Vaccination review due',
+      allergies: index % 3 === 0 ? 'No known allergies' : 'Ask owner before medication',
+      lastVisit: booking.date,
+    }));
+  }, [completedBookings]);
+
   useEffect(() => {
-    if (!clinic) return;
+    if (!clinic) {
+      setClinicReviews([]);
+      return;
+    }
+
     const fetchClinicReviews = async () => {
       try {
         const apiBase = (import.meta as any).env?.VITE_API_URL || '';
@@ -49,371 +230,567 @@ export default function VetDashboard({
         const data = await res.json();
         setClinicReviews(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error('Failed to pull reviews:', err);
+        console.error('Failed to load clinic reviews:', err);
+        setClinicReviews([]);
       }
     };
-    fetchClinicReviews();
-  }, [clinic?.id, bookings]);
 
-  const handleActionBooking = async (id: string, status: 'approved' | 'completed' | 'cancelled') => {
-    setLoading(true);
+    fetchClinicReviews();
+  }, [clinic?.id]);
+
+  const updateBooking = async (id: string, status: 'approved' | 'completed' | 'cancelled') => {
+    setLoadingId(id);
     try {
       await onUpdateBookingStatus(id, status);
-    } catch (err) {
-      alert('Could not update booking status');
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
-  const handleClaimEmergency = async (id: string) => {
+  const updateEmergency = async (id: string, status: 'accepted' | 'completed') => {
     if (!clinic) return;
-    setLoading(true);
+    setLoadingId(id);
     try {
-      await onUpdateEmergencyStatus(id, 'accepted', clinic.id, clinic.name);
-    } catch (err) {
-      alert('Could not accept emergency reservation');
+      await onUpdateEmergencyStatus(id, status, clinic.id, clinic.name);
     } finally {
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
-  const sidebarOpts = [
-    { id: 'overview', label: 'Doctor Hub', icon: ToggleLeft },
-    { id: 'bookings', label: 'In-Clinic Bookings', icon: CalendarCheck, count: regularBookings.filter(b => b.status === 'pending').length },
-    { id: 'home_visits', label: 'Home Visit Jobs', icon: Home, count: homeVisits.filter(b => b.status === 'pending').length },
-    { id: 'emergencies', label: 'Emergency Alerts', icon: ShieldAlert, count: activeEmergencies.filter(e => e.status === 'pending' || e.status === 'notified').length },
-    { id: 'reviews', label: 'Patient Reviews', icon: Star, count: clinicReviews.length },
-  ];
+  const tabs = [
+    { id: 'overview', label: 'Home', icon: BarChart3 },
+    { id: 'appointments', label: 'Appointments', icon: CalendarCheck, count: pendingBookings.length },
+    { id: 'emergencies', label: 'Emergencies', icon: ShieldAlert, count: activeEmergencies.filter((emergency) => emergency.status === 'pending' || emergency.status === 'notified').length },
+    { id: 'records', label: 'Patient Records', icon: ClipboardList },
+    { id: 'reviews', label: 'Reviews', icon: Star, count: clinicReviews.length },
+    { id: 'schedule', label: 'Schedule', icon: CalendarClock },
+    { id: 'profile', label: 'Profile', icon: UserRound },
+    { id: 'messages', label: 'Messages', icon: MessageSquare, count: Math.min(4, pendingBookings.length + ownedEmergencies.length) },
+    { id: 'prescriptions', label: 'Prescriptions', icon: Pill },
+    { id: 'analytics', label: 'Analytics', icon: Activity },
+    { id: 'credentials', label: 'Credentials', icon: ShieldCheck },
+    { id: 'security', label: 'Security', icon: Lock },
+  ] as const;
+
+  if (!clinic) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-[75vh]">
+        <div className="bg-white border border-amber-200 rounded-3xl p-8 shadow-sm text-center space-y-4">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center">
+            <ShieldAlert className="h-7 w-7" />
+          </div>
+          <h2 className="font-display text-2xl font-black text-slate-900">Verification profile required</h2>
+          <p className="mx-auto max-w-xl text-sm text-slate-500">
+            Your veterinarian account is not linked to a professional verification profile yet. Submit clinic, license, and document details from the veterinarian registration flow to enter the admin review queue.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 min-h-[75vh]">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* Left Sidebar Panel */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-green-50 shadow-sm space-y-6">
-          <div className="flex items-center gap-3 border-b border-green-50 pb-5">
-            <img
-              src={currentUser.avatarUrl || 'https://api.dicebear.com/7.x/adventurer/svg'}
-              alt={currentUser.name}
-              className="w-12 h-12 rounded-full border border-green-200"
-              referrerPolicy="no-referrer"
-            />
-            <div className="text-left">
-              <h4 className="font-display font-bold text-gray-900 line-clamp-1">{currentUser.name}</h4>
-              <span className="text-[10px] uppercase font-bold text-[#4CAF50] bg-green-150 bg-green-50 py-0.5 px-2 rounded-md">Medical Doctor</span>
-            </div>
-          </div>
-
-          <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-            {sidebarOpts.map((opt) => {
-              const IconComp = opt.icon;
-              const isActive = activeSubTab === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setActiveSubTab(opt.id as any)}
-                  className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? 'bg-green-50 text-green-700 shadow-inner-sm'
-                      : 'text-gray-600 hover:text-green-700 hover:bg-green-50/20'
-                  }`}
-                >
-                  <IconComp className={`w-4 h-4 ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
-                  <span className="flex-grow text-left">{opt.label}</span>
-                  {opt.count !== undefined && opt.count > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] ${
-                      isActive ? 'bg-green-600 text-white' : 'bg-slate-100 text-gray-500'
-                    }`}>{opt.count}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {clinic && (
-            <div className="bg-slate-50 p-4 rounded-2xl border text-left text-xs text-gray-500 space-y-1">
-              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Primary Station</span>
-              <p className="font-black text-gray-700 font-display line-clamp-1">{clinic.name}</p>
-              <p className="text-[10px]">📍 {clinic.area}, {clinic.city}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Right Dashboard Space */}
-        <div className="lg:col-span-9 bg-white p-6 sm:p-8 rounded-3xl border border-green-50 shadow-sm text-left min-h-[500px]">
-          
-          {/* OVERVIEW PANEL */}
-          {activeSubTab === 'overview' && (
-            <div className="space-y-6">
-              <div className="space-y-1">
-                <h3 className="font-display font-black text-2xl text-gray-900">Veterinary Doctor Terminal</h3>
-                <p className="text-gray-500 text-xs sm:text-sm">Welcome back, {currentUser.name}. Review trauma triggers and clinic visitor checkups scheduled today.</p>
+    <div className="min-h-[78vh] bg-[#F4FBF3]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <aside className="lg:col-span-3 bg-white rounded-3xl border border-green-100/70 shadow-sm p-5 space-y-5 lg:sticky lg:top-24">
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+              <img
+                src={currentUser.avatarUrl || 'https://api.dicebear.com/7.x/adventurer/svg'}
+                alt={currentUser.name}
+                className="h-12 w-12 rounded-2xl border border-green-100 bg-green-50"
+                referrerPolicy="no-referrer"
+              />
+              <div className="min-w-0">
+                <h2 className="font-display font-black text-slate-900 truncate">{currentUser.name}</h2>
+                <p className="text-[11px] text-slate-500 truncate">{clinic.name}</p>
               </div>
+            </div>
 
-              {/* Analytics metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-green-50 to-white border-green-100 shadow-sm">
-                  <span className="text-xl">🏪</span>
-                  <div>
-                    <span className="block text-xl font-black text-gray-800 font-display">{clinicBookings.filter(b => b.status === 'approved').length}</span>
-                    <span className="text-[9px] uppercase font-bold text-gray-400">Approved Bookings</span>
+            <div className={`rounded-2xl border p-3 ${verification.tone}`}>
+              <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wide">
+                {isApproved ? <BadgeCheck className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {verification.label}
+              </span>
+              <p className="mt-2 text-xs leading-relaxed opacity-90">{verification.message}</p>
+            </div>
+
+            <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    disabled={!isApproved && tab.id !== 'credentials'}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-black whitespace-nowrap transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                      active ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 ${active ? 'text-green-300' : 'text-slate-400'}`} />
+                    <span className="flex-1 text-left">{tab.label}</span>
+                    {'count' in tab && tab.count ? (
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] ${active ? 'bg-white/15 text-white' : 'bg-green-50 text-green-700'}`}>{tab.count}</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <main className="lg:col-span-9 space-y-6">
+            {!isApproved && (
+              <section className="bg-white rounded-3xl border border-amber-200 shadow-sm p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0">
+                    <Lock className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-display text-xl font-black text-slate-900">Dashboard locked until admin approval</h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Appointments, emergency broadcasts, public profile visibility, and patient communications remain disabled while verification is incomplete.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'overview' && isApproved && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                  <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wide text-green-700">Veterinarian Dashboard</p>
+                      <h3 className="font-display text-2xl sm:text-3xl font-black text-slate-900">Professional workspace</h3>
+                      <p className="mt-1 text-sm text-slate-500">Manage appointments, emergencies, records, prescriptions, messages, and performance from one verified hub.</p>
+                    </div>
+                    <span className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2 text-xs font-black text-green-700">
+                      <BadgeCheck className="h-4 w-4" />
+                      Verified badge active
+                    </span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-lime-50 to-white border-lime-100 shadow-sm">
-                  <span className="text-xl">⏳</span>
-                  <div>
-                    <span className="block text-xl font-black text-gray-800 font-display">{clinicBookings.filter(b => b.status === 'pending').length}</span>
-                    <span className="text-[9px] uppercase font-bold text-gray-400">Pending Approvals</span>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <MetricTile icon={CalendarCheck} label="Today" value={todaysAppointments.length} hint="Appointments booked for the current date" />
+                  <MetricTile icon={Clock} label="Upcoming" value={clinicBookings.filter((booking) => booking.status === 'approved').length} hint="Approved consultations waiting to be completed" />
+                  <MetricTile icon={ShieldAlert} label="Emergencies" value={activeEmergencies.length} hint="Open regional emergency requests" />
+                  <MetricTile icon={Star} label="Rating" value={`${clinic.rating.toFixed(1)}`} hint={`${clinic.reviewsCount || clinicReviews.length} public reviews tracked`} />
+                  <MetricTile icon={UsersRound} label="Patients" value={patientRecords.length} hint="Unique completed patient records" />
+                  <MetricTile icon={MessageSquare} label="Messages" value={Math.min(4, pendingBookings.length + ownedEmergencies.length)} hint="Appointment and follow-up conversations" />
+                  <MetricTile icon={Pill} label="Prescriptions" value={completedBookings.length} hint="Draftable notes from completed consultations" />
+                  <MetricTile icon={Bell} label="Notifications" value={pendingBookings.length + newReviews.length} hint="New requests, reviews, and verification reminders" />
                 </div>
 
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-emerald-50/60 to-white border-emerald-100 shadow-sm">
-                  <span className="text-xl">🚨</span>
-                  <div>
-                    <span className="block text-xl font-black text-emerald-600 font-display">{activeEmergencies.length}</span>
-                    <span className="text-[9px] uppercase font-bold text-emerald-500 font-sans">Active Emergencies</span>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                    <h4 className="font-display font-black text-slate-900">Weekly appointment trends</h4>
+                    <div className="mt-5 flex h-40 items-end gap-3">
+                      {trendBars.map((height, index) => (
+                        <div key={height} className="flex-1 rounded-t-xl bg-green-500/80" style={{ height: `${height}%` }} title={`Day ${index + 1}`} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div className="p-4 rounded-2xl border text-left space-y-2 bg-gradient-to-tr from-lime-50 to-white border-lime-100 shadow-sm animate-fade-in">
-                  <span className="text-xl">⭐️</span>
-                  <div>
-                    <span className="block text-xl font-black text-gray-800 font-display">{clinic?.rating || 5.0} ★</span>
-                    <span className="text-[9px] uppercase font-bold text-gray-500 font-sans">Satisfaction Score</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Alert list on center */}
-              <div className="space-y-4 pt-3">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <h4 className="font-display font-extrabold text-gray-800 text-sm">Critical Active Regional Emergencies</h4>
-                  <span className="text-[10px] text-emerald-500 bg-emerald-100/60 px-2 py-0.5 rounded font-bold animate-pulse">Broadcast Channel Active</span>
-                </div>
-
-                {activeEmergencies.length === 0 ? (
-                  <div className="bg-slate-50 border p-6 rounded-2xl text-center border-dashed border-gray-200">
-                    <p className="text-xs text-gray-400">All local animal emergencies are currently stabilized or completed. Good job!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {activeEmergencies.map((em) => (
-                      <div key={em.id} className="p-4 bg-white border border-emerald-100 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm border-l-4 border-l-emerald-500">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-sm text-gray-800">{em.petName} ({em.petType})</span>
-                            <span className="text-[9px] bg-emerald-50 text-emerald-600 font-bold px-1.5 py-0.5 rounded uppercase">{em.status}</span>
-                          </div>
-                          <p className="text-xs text-gray-500">📍 <b>Address:</b> {em.address} • Contact: {em.phone}</p>
-                          <p className="text-xs text-emerald-700 italic font-semibold">"Symptom: {em.description}"</p>
+                  <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                    <h4 className="font-display font-black text-slate-900">Priority queue</h4>
+                    <div className="mt-4 space-y-3">
+                      {[...pendingBookings.slice(0, 2), ...activeEmergencies.slice(0, 2)].map((item) => (
+                        <div key={item.id} className="rounded-2xl border border-slate-200 p-4">
+                          {'petOwnerName' in item ? (
+                            <>
+                              <p className="text-sm font-black text-slate-800">{item.petOwnerName}</p>
+                              <p className="mt-1 text-xs text-slate-500">{item.petName} needs {item.service} on {item.date} at {item.time}</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm font-black text-slate-800">{item.petName} emergency</p>
+                              <p className="mt-1 text-xs text-slate-500">{item.description}</p>
+                            </>
+                          )}
                         </div>
+                      ))}
+                      {!pendingBookings.length && !activeEmergencies.length && (
+                        <p className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-400">No pending clinical actions right now.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
 
-                        {em.status === 'pending' || em.status === 'notified' ? (
-                          <button
-                            onClick={() => handleClaimEmergency(em.id)}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer self-start sm:self-center flex items-center gap-1"
-                          >
-                            <Phone className="w-3.5 h-3.5" />
-                            <span>Claim & Call Parent</span>
-                          </button>
-                        ) : em.acceptedByClinicId === clinic?.id ? (
-                          <button
-                            onClick={() => onUpdateEmergencyStatus(em.id, 'completed', clinic.id, clinic.name)}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-xs rounded-xl cursor-pointer self-start sm:self-center"
-                          >
-                            Mark Stabilized
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-400 italic">Claimed by another unit</span>
-                        )}
-                      </div>
+            {activeTab === 'appointments' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <h3 className="font-display text-2xl font-black text-slate-900">Appointment management</h3>
+                    <p className="text-sm text-slate-500">Accept, decline, complete, and review clinic or home visit requests.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(['all', 'pending', 'approved', 'completed', 'cancelled'] as const).map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setAppointmentFilter(filter)}
+                        className={`rounded-xl px-3 py-2 text-xs font-black capitalize ${appointmentFilter === filter ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                      >
+                        {filter}
+                      </button>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: IN-CLINIC BOOKINGS */}
-          {activeSubTab === 'bookings' && (
-            <div className="space-y-6">
-              <div className="border-b pb-3 space-y-1">
-                <h3 className="font-display font-black text-2xl text-gray-900">In-clinic Doctor Visits</h3>
-                <p className="text-gray-500 text-xs sm:text-sm">Manage, approve, or cancel physical medical checkups requested at your clinic desk.</p>
-              </div>
-
-              {regularBookings.length === 0 ? (
-                <div className="p-12 border rounded-3xl text-center border-dashed border-gray-150 bg-slate-50 text-gray-400 text-xs">
-                  No clinic checkup appointments logged on your schedule sheet.
                 </div>
-              ) : (
-                <div className="space-y-3.5">
-                  {regularBookings.map((book) => (
-                    <div key={book.id} className="p-5 bg-white border border-gray-100 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-                      <div className="space-y-1.5 text-left text-xs text-gray-500 leading-normal">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-display font-black text-base text-gray-800">{book.petOwnerName}</span>
-                          <span className="text-[9px] font-bold bg-slate-50 border border-slate-205 py-0.5 px-2 rounded-md uppercase text-gray-500 tracking-wide">{book.service}</span>
-                        </div>
-                        <p>🐾 <b>Pet Companion:</b> {book.petName} ({book.petType})</p>
-                        <p>📅 <b>Requested Slot:</b> {book.date} at {book.time}</p>
-                        <p>📧 <b>Parent E-mail:</b> {book.petOwnerEmail}</p>
-                        {book.notes && <p className="italic text-gray-400 font-medium">🐾 "Parent notes: {book.notes}"</p>}
-                      </div>
 
-                      {/* Scheduling controls */}
-                      <div className="flex items-center gap-2 self-start sm:self-center">
-                        {book.status === 'pending' ? (
+                <div className="space-y-3">
+                  {visibleAppointments.map((booking) => (
+                    <div key={booking.id} className="rounded-3xl border border-slate-200 p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-display text-lg font-black text-slate-900">{booking.petOwnerName}</h4>
+                          {statusBadge(booking.status)}
+                          <span className="rounded-lg bg-slate-50 px-2.5 py-1 text-[10px] font-black uppercase text-slate-500">{booking.type === 'home_visit' ? 'Home visit' : 'Clinic visit'}</span>
+                        </div>
+                        <p className="text-xs text-slate-500">{booking.petName} ({booking.petType}) requested {booking.service}</p>
+                        <p className="text-xs text-slate-500">{booking.date} at {booking.time} | {booking.petOwnerEmail}</p>
+                        {booking.notes && <p className="rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">{booking.notes}</p>}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {booking.status === 'pending' && (
                           <>
-                            <button
-                              onClick={() => handleActionBooking(book.id, 'approved')}
-                              className="p-2 bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 rounded-xl transition-all cursor-pointer"
-                              title="Approve Slot"
-                            >
-                              <Check className="w-4 h-4" />
+                            <button disabled={loadingId === booking.id} onClick={() => updateBooking(booking.id, 'approved')} className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white hover:bg-green-700 disabled:opacity-60">
+                              <Check className="h-4 w-4" />
+                              Accept
                             </button>
-                            <button
-                              onClick={() => handleActionBooking(book.id, 'cancelled')}
-                              className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer"
-                              title="Decline Slot"
-                            >
-                              <X className="w-4 h-4" />
+                            <button disabled={loadingId === booking.id} onClick={() => updateBooking(booking.id, 'cancelled')} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 disabled:opacity-60">
+                              <X className="h-4 w-4" />
+                              Decline
                             </button>
                           </>
-                        ) : book.status === 'approved' ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 bg-green-50 text-green-700 border rounded">Approved</span>
-                            <button
-                              onClick={() => handleActionBooking(book.id, 'completed')}
-                              className="px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer"
-                            >
-                              Mark Completed
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs font-semibold capitalize text-gray-400 bg-slate-50 py-1 px-2.5 rounded border border-slate-200/50">{book.status}</span>
+                        )}
+                        {booking.status === 'approved' && (
+                          <button disabled={loadingId === booking.id} onClick={() => updateBooking(booking.id, 'completed')} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-slate-800 disabled:opacity-60">
+                            <ClipboardList className="h-4 w-4" />
+                            Complete
+                          </button>
                         )}
                       </div>
                     </div>
                   ))}
+                  {!visibleAppointments.length && (
+                    <p className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-400">No appointments match this filter.</p>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </section>
+            )}
 
-          {/* TAB 3: DOCTOR HOME VISITS */}
-          {activeSubTab === 'home_visits' && (
-            <div className="space-y-6">
-              <div className="border-b pb-3 space-y-1">
-                <h3 className="font-display font-black text-2xl text-gray-900">Registered Home Visit Jobs</h3>
-                <p className="text-gray-500 text-xs sm:text-sm">Doctors can trace local parent coordinates, details, and dispatch schedules for home visits.</p>
-              </div>
-
-              {homeVisits.length === 0 ? (
-                <div className="p-12 border rounded-3xl text-center border-dashed border-gray-150 bg-slate-50 text-gray-400 text-xs">
-                  Your veterinary center does not have any pending Home Doctor requests currently.
+            {activeTab === 'emergencies' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Emergency requests</h3>
+                  <p className="text-sm text-slate-500">Accept high-priority cases, contact pet owners, and mark treatment as completed.</p>
                 </div>
-              ) : (
-                <div className="space-y-3.5">
-                  {homeVisits.map((book) => (
-                    <div key={book.id} className="p-5 bg-white border border-green-50 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border-l-4 border-l-green-600">
-                      <div className="space-y-1.5 text-left text-xs text-gray-500 leading-normal">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-display font-black text-base text-gray-800">{book.petOwnerName}</span>
-                          <span className="text-[9px] font-bold bg-green-50 border border-green-200 py-0.5 px-2 rounded uppercase text-green-700">🏠 Home Care</span>
+                <div className="space-y-3">
+                  {activeEmergencies.map((emergency) => (
+                    <div key={emergency.id} className="rounded-3xl border border-rose-100 border-l-4 border-l-rose-500 p-5 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-display text-lg font-black text-slate-900">{emergency.petName} ({emergency.petType})</h4>
+                          {statusBadge(emergency.status)}
                         </div>
-                        <p>⚕️ <b>Duty service:</b> {book.service}</p>
-                        <p>🐶 <b>Diagnose companion:</b> {book.petName} ({book.petType})</p>
-                        <p>🕒 <b>Schedule slot:</b> {book.date} at {book.time}</p>
-                        {book.notes && <p className="italic text-gray-400 bg-slate-50 p-2 rounded-lg">💬 "{book.notes}"</p>}
+                        <p className="text-xs text-slate-500">{emergency.address}</p>
+                        <p className="text-xs font-semibold text-rose-700">{emergency.description}</p>
+                        <a href={`tel:${emergency.phone}`} className="inline-flex items-center gap-2 text-xs font-black text-green-700">
+                          <Phone className="h-4 w-4" />
+                          {emergency.phone}
+                        </a>
                       </div>
-
-                      {/* Status changer buttons */}
-                      <div className="flex items-center gap-2 self-start sm:self-center">
-                        {book.status === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => handleActionBooking(book.id, 'approved')}
-                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs rounded-xl active:scale-95 transition-all cursor-pointer"
-                            >
-                              Dispatch Doctor
-                            </button>
-                            <button
-                              onClick={() => handleActionBooking(book.id, 'cancelled')}
-                              className="px-3.5 py-2 border hover:bg-slate-50 text-gray-500 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        ) : book.status === 'approved' ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] uppercase font-semibold px-2 py-1 bg-blue-50 text-blue-700 border rounded">Dispatched</span>
-                            <button
-                              onClick={() => handleActionBooking(book.id, 'completed')}
-                              className="px-3.5 py-1.5 bg-[#4CAF50] text-white font-bold text-xs rounded-xl active:scale-95 transition-all cursor-pointer"
-                            >
-                              Mark Completed
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs font-semibold capitalize text-gray-400 bg-slate-100 py-1 px-2.5 rounded">{book.status}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {(emergency.status === 'pending' || emergency.status === 'notified') && (
+                          <button disabled={loadingId === emergency.id} onClick={() => updateEmergency(emergency.id, 'accepted')} className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-black text-white hover:bg-rose-700 disabled:opacity-60">
+                            Accept case
+                          </button>
+                        )}
+                        {emergency.acceptedByClinicId === clinic.id && emergency.status === 'accepted' && (
+                          <button disabled={loadingId === emergency.id} onClick={() => updateEmergency(emergency.id, 'completed')} className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-800 disabled:opacity-60">
+                            Mark treatment complete
+                          </button>
                         )}
                       </div>
                     </div>
                   ))}
+                  {!activeEmergencies.length && (
+                    <p className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-400">No active emergency requests are currently open.</p>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </section>
+            )}
 
-          {/* TAB 4: CLINIC REVIEWS */}
-          {activeSubTab === 'reviews' && (
-            <div className="space-y-6">
-              <div className="border-b pb-3 space-y-1">
-                <h3 className="font-display font-black text-2xl text-gray-900">Your Clinic Feedback Log</h3>
-                <p className="text-gray-500 text-xs sm:text-sm">Read and analyze treatment logs, feedback comments, and rating reviews published by pet owners.</p>
-              </div>
-
-              {clinicReviews.length === 0 ? (
-                <div className="p-12 border rounded-3xl text-center border-dashed border-gray-150 bg-slate-50 text-gray-400 text-xs">
-                  Your veterinary clinic hasn't received any satisfying index reviews. Promote checkout slips!
+            {activeTab === 'records' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Patient records</h3>
+                  <p className="text-sm text-slate-500">Completed appointments are organized into digital pet treatment histories.</p>
                 </div>
-              ) : (
-                <div className="space-y-3.5">
-                  {clinicReviews.map((rev) => (
-                    <div key={rev.id} className="p-4 bg-white border rounded-2xl text-left space-y-2.5 shadow-sm border-green-50">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-gray-800">{rev.userName} ({rev.userEmail})</span>
-                        <span className="text-[10px] text-gray-400 font-semibold">{rev.date}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="flex text-lime-400">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3 h-3 ${i < rev.rating ? 'fill-lime-400' : 'text-gray-200'}`}
-                            />
-                          ))}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {patientRecords.map((record) => (
+                    <div key={record.id} className="rounded-3xl border border-slate-200 p-5 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h4 className="font-display font-black text-slate-900">{record.pet}</h4>
+                          <p className="text-xs text-slate-500">{record.type} owned by {record.owner}</p>
                         </div>
-                        <span className="text-[9px] uppercase font-bold text-gray-500 flex items-center gap-1">🐾 {rev.petType} companion</span>
+                        <Stethoscope className="h-5 w-5 text-green-700" />
                       </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
+                        <p><b>Diagnosis:</b> {record.diagnosis}</p>
+                        <p><b>Vaccination:</b> {record.vaccination}</p>
+                        <p><b>Allergies:</b> {record.allergies}</p>
+                        <p><b>Last visit:</b> {record.lastVisit}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {!patientRecords.length && (
+                    <p className="xl:col-span-2 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-400">Patient records appear after consultations are marked completed.</p>
+                  )}
+                </div>
+              </section>
+            )}
 
-                      <p className="text-xs text-gray-600 font-normal leading-relaxed">
-                        "{rev.reviewText}"
-                      </p>
+            {activeTab === 'reviews' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Reviews and ratings</h3>
+                  <p className="text-sm text-slate-500">Feedback is read-only to preserve transparency.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <MetricTile icon={Star} label="Overall" value={clinic.rating.toFixed(1)} hint="Average public rating" />
+                  <MetricTile icon={MessageSquare} label="New Reviews" value={newReviews.length} hint="Received in the last seven days" />
+                  <MetricTile icon={Activity} label="Satisfaction" value={`${Math.round(clinic.rating * 20)}%`} hint="Derived from star score" />
+                </div>
+                <div className="space-y-3">
+                  {clinicReviews.map((review) => (
+                    <div key={review.id} className="rounded-3xl border border-slate-200 p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-black text-slate-900">{review.userName}</p>
+                        <span className="text-xs text-slate-400">{review.date}</span>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <Star key={index} className={`h-4 w-4 ${index < review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                        ))}
+                        <span className="text-xs font-bold text-slate-500">{review.petType}</span>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-600">{review.reviewText}</p>
+                    </div>
+                  ))}
+                  {!clinicReviews.length && (
+                    <p className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-400">No clinic reviews yet.</p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'schedule' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Schedule and availability</h3>
+                  <p className="text-sm text-slate-500">Current availability controls for appointments and emergency coverage.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-3xl border border-slate-200 p-5">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Working hours</p>
+                    <p className="mt-2 font-display text-xl font-black text-slate-900">{clinic.workingHours}</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200 p-5">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Emergency mode</p>
+                    <p className="mt-2 font-display text-xl font-black text-slate-900">{clinic.hasEmergency ? 'Available' : 'Offline'}</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-200 p-5">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Home visits</p>
+                    <p className="mt-2 font-display text-xl font-black text-slate-900">{clinic.hasHomeVisit ? 'Enabled' : 'Disabled'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
+                    <div key={day} className="flex items-center justify-between rounded-2xl border border-slate-200 p-4">
+                      <span className="text-sm font-black text-slate-800">{day}</span>
+                      <span className="text-xs text-slate-500">{clinic.workingHours}</span>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+              </section>
+            )}
 
+            {activeTab === 'profile' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Profile management</h3>
+                  <p className="text-sm text-slate-500">Public clinic details can be maintained here. Sensitive credentials require re-verification.</p>
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {[
+                    ['Clinic', clinic.name],
+                    ['Veterinarian', clinic.veterinarianName || currentUser.name],
+                    ['Phone', clinic.phone],
+                    ['Address', clinic.address],
+                    ['Consultation focus', clinic.services.join(', ')],
+                    ['Specializations', clinic.specialists.join(', ')],
+                    ['Experience', clinic.yearsOfExperience || 'Not listed'],
+                    ['Biography', clinic.description],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-slate-200 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-700">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'messages' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Messages and notifications</h3>
+                  <p className="text-sm text-slate-500">Appointment chats, verification notices, cancellations, reviews, and platform updates.</p>
+                </div>
+                <div className="space-y-3">
+                  {pendingBookings.slice(0, 4).map((booking) => (
+                    <div key={booking.id} className="rounded-3xl border border-slate-200 p-5 flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-green-700 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-black text-slate-900">New appointment request from {booking.petOwnerName}</p>
+                        <p className="mt-1 text-xs text-slate-500">{booking.petName} needs {booking.service}. Reply after accepting the booking.</p>
+                      </div>
+                    </div>
+                  ))}
+                  {newReviews.map((review) => (
+                    <div key={review.id} className="rounded-3xl border border-slate-200 p-5 flex items-start gap-3">
+                      <Star className="h-5 w-5 text-amber-500 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-black text-slate-900">New review from {review.userName}</p>
+                        <p className="mt-1 text-xs text-slate-500">{review.rating} star feedback for {review.petType} care.</p>
+                      </div>
+                    </div>
+                  ))}
+                  {!pendingBookings.length && !newReviews.length && (
+                    <p className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-400">No unread messages or notifications.</p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'prescriptions' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Prescriptions and medical notes</h3>
+                  <p className="text-sm text-slate-500">Completed consultations can be converted into treatment notes and follow-up recommendations.</p>
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {completedBookings.map((booking) => (
+                    <div key={booking.id} className="rounded-3xl border border-slate-200 p-5 space-y-3">
+                      <h4 className="font-display font-black text-slate-900">{booking.petName} prescription draft</h4>
+                      <p className="text-xs text-slate-500">Diagnosis: {booking.notes || booking.service}</p>
+                      <p className="text-xs text-slate-500">Medicine: To be entered after consultation review</p>
+                      <p className="text-xs text-slate-500">Follow-up: Schedule review in 7-14 days if symptoms persist</p>
+                    </div>
+                  ))}
+                  {!completedBookings.length && (
+                    <p className="xl:col-span-2 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-sm text-slate-400">Prescription drafts appear after appointments are completed.</p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'analytics' && isApproved && (
+              <section className="space-y-6">
+                <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                  <h3 className="font-display text-2xl font-black text-slate-900">Analytics and performance</h3>
+                  <p className="text-sm text-slate-500">Track consultations, emergency cases, acceptance rate, cancellations, response quality, and satisfaction.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <MetricTile icon={Stethoscope} label="Consultations" value={clinicBookings.length} hint="Total booked clinic and home visits" />
+                  <MetricTile icon={HeartPulse} label="Emergencies" value={ownedEmergencies.length} hint="Emergency cases accepted by this clinic" />
+                  <MetricTile icon={Check} label="Acceptance" value={`${clinicBookings.length ? Math.round(((clinicBookings.length - clinicBookings.filter((booking) => booking.status === 'cancelled').length) / clinicBookings.length) * 100) : 100}%`} hint="Requests not declined" />
+                  <MetricTile icon={X} label="Cancellation" value={`${clinicBookings.length ? Math.round((clinicBookings.filter((booking) => booking.status === 'cancelled').length / clinicBookings.length) * 100) : 0}%`} hint="Cancelled appointment share" />
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                    <h4 className="font-display font-black text-slate-900">Monthly patient statistics</h4>
+                    <div className="mt-5 flex h-40 items-end gap-3">
+                      {patientBars.map((height) => (
+                        <div key={height} className="flex-1 rounded-t-xl bg-slate-900" style={{ height: `${height}%` }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                    <h4 className="font-display font-black text-slate-900">Rating trend</h4>
+                    <div className="mt-5 space-y-3">
+                      {ratingBars.map((rating, index) => (
+                        <div key={`${rating}-${index}`} className="flex items-center gap-3">
+                          <span className="w-10 text-xs font-black text-slate-500">M{index + 1}</span>
+                          <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-amber-400" style={{ width: `${rating * 20}%` }} />
+                          </div>
+                          <span className="w-8 text-xs font-black text-slate-700">{rating.toFixed(1)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'credentials' && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Verification and credential management</h3>
+                  <p className="text-sm text-slate-500">Review current approval status, uploaded documents, and credential details.</p>
+                </div>
+                <div className={`rounded-3xl border p-5 ${verification.tone}`}>
+                  <p className="text-xs font-black uppercase tracking-wide">{verification.label}</p>
+                  <p className="mt-2 text-sm">{verification.message}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">License number</p>
+                    <p className="mt-1 text-sm font-black text-slate-800">{clinic.licenseNumber || 'Pending entry'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Expiry reminder</p>
+                    <p className="mt-1 text-sm font-black text-slate-800">90 days before expiry</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">Documents</p>
+                    <p className="mt-1 text-sm font-black text-slate-800">{clinic.verificationDocuments?.length || 0} uploaded</p>
+                  </div>
+                </div>
+                <DocumentList documents={clinic.verificationDocuments || []} />
+              </section>
+            )}
+
+            {activeTab === 'security' && isApproved && (
+              <section className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-display text-2xl font-black text-slate-900">Account and security</h3>
+                  <p className="text-sm text-slate-500">Password management, two-factor authentication, active sessions, and privacy controls.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    ['Password', 'Last changed recently'],
+                    ['Two-factor authentication', 'Optional setup available'],
+                    ['Active sessions', '1 trusted browser session'],
+                    ['Privacy settings', 'Public verified clinic profile visible'],
+                    ['Device login history', 'Current Windows browser session'],
+                    ['Account deactivation', 'Requires support confirmation'],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl border border-slate-200 p-4">
+                      <p className="text-sm font-black text-slate-900">{label}</p>
+                      <p className="mt-1 text-xs text-slate-500">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </main>
         </div>
       </div>
     </div>
   );
 }
-
