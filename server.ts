@@ -60,6 +60,14 @@ function getJwtSecret(): string {
   return secret;
 }
 
+function getSessionExpiryForRole(role: string): number | undefined {
+  if (role === 'pet_owner') {
+    return 30 * 60;
+  }
+
+  return undefined;
+}
+
 function getISTTime(): string {
   return new Date().toLocaleTimeString('en-IN', {
     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata'
@@ -103,7 +111,8 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const token = signToken(
       { id: newUser.id, email: normalizedEmail, role: newUser.role, clinicId: newUser.clinicId || undefined },
-      getJwtSecret()
+      getJwtSecret(),
+      getSessionExpiryForRole(newUser.role)
     );
 
     // Build user response (exclude passwordHash)
@@ -137,7 +146,8 @@ app.post('/api/auth/login', async (req, res) => {
 
     const token = signToken(
       { id: user.id, email: normalizedEmail, role: user.role, clinicId: user.clinicId || undefined },
-      getJwtSecret()
+      getJwtSecret(),
+      getSessionExpiryForRole(user.role)
     );
 
     const userResponse = await buildUserResponse(user.id);

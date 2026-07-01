@@ -42,17 +42,20 @@ function createSignature(header: string, payload: string, secret: string): strin
 
 /**
  * Sign a JWT token with the given payload and secret.
- * Token expires in 7 days by default.
+ * If expiresInSeconds is omitted, the token will not include an exp claim.
  */
-export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, secret: string, expiresInSeconds: number = 7 * 24 * 60 * 60): string {
+export function signToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, secret: string, expiresInSeconds?: number): string {
   const header = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
 
   const now = Math.floor(Date.now() / 1000);
   const fullPayload: JWTPayload = {
     ...payload,
     iat: now,
-    exp: now + expiresInSeconds,
   };
+
+  if (typeof expiresInSeconds === 'number') {
+    fullPayload.exp = now + expiresInSeconds;
+  }
 
   const encodedPayload = base64UrlEncode(JSON.stringify(fullPayload));
   const signature = createSignature(header, encodedPayload, secret);
