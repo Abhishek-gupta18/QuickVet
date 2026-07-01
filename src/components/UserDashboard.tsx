@@ -1,10 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, PawPrint, CalendarDays, ShieldAlert, Heart, 
   Plus, ClipboardList, CheckCircle, Clock, Search, ArrowRight,
   AlertTriangle, MapPin, Phone
 } from 'lucide-react';
 import { User, Pet, Booking, EmergencyRequest, VetClinic } from '../types';
+
+interface SeriesPoint {
+  label: string;
+  value: number;
+}
+
+interface UserAnalyticsData {
+  summary: {
+    registeredPets: number;
+    upcomingAppointment: string | null;
+    completedVisits: number;
+    vaccinationsDue: number;
+    medicalHistoryEntries: number;
+    emergencyRequests: number;
+    favouriteVeterinarians: number;
+    medicalExpenses: number;
+  };
+  charts: {
+    appointmentHistory: SeriesPoint[];
+    vaccinationTimeline: SeriesPoint[];
+    petHealthTimeline: SeriesPoint[];
+    medicalExpenses: SeriesPoint[];
+    weightProgress: SeriesPoint[];
+  };
+  upcomingBookings: Array<{ clinicName: string; service: string; date: string; time: string; status: string }>;
+}
 
 interface UserDashboardProps {
   currentUser: User;
@@ -36,6 +62,8 @@ export default function UserDashboard({
   const [weight, setWeight] = useState('');
   const [medHistory, setMedHistory] = useState('');
   const [submittingPet, setSubmittingPet] = useState(false);
+  const [analytics, setAnalytics] = useState<UserAnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
 
   // Filtered data scoped to this user (tenant isolation already on server, but also filter client-side)
@@ -48,6 +76,51 @@ export default function UserDashboard({
   const favoriteClinics = clinics.filter(
     c => currentUser.favoriteClinics?.includes(c.id)
   );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAnalytics = async () => {
+      try {
+        const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+        const token = localStorage.getItem('vetfinder_token');
+        const res = await fetch(`${apiBase}/api/analytics/user`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (!res.ok) {
+          if (mounted) setAnalytics(null);
+          return;
+        }
+
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          if (mounted) setAnalytics(null);
+          return;
+        }
+
+        const data = await res.json();
+        if (mounted) setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to load user analytics:', err);
+        if (mounted) setAnalytics(null);
+      } finally {
+        if (mounted) setAnalyticsLoading(false);
+      }
+    };
+
+    loadAnalytics();
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser.id]);
+
+  const userAnalytics = analytics?.summary;
+  const appointmentHistory = analytics?.charts.appointmentHistory ?? [];
+  const vaccinationTimeline = analytics?.charts.vaccinationTimeline ?? [];
+  const petHealthTimeline = analytics?.charts.petHealthTimeline ?? [];
+  const medicalExpenses = analytics?.charts.medicalExpenses ?? [];
+  const weightProgress = analytics?.charts.weightProgress ?? [];
 
   // Sidebar navigation definition
   const sidebarOpts = [
@@ -97,6 +170,9 @@ export default function UserDashboard({
       approved: 'bg-blue-50 border-blue-200 text-blue-700',
       cancelled: 'bg-stone-50 border-stone-200 text-stone-500',
       pending: 'bg-amber-50 border-amber-200 text-amber-700',
+      upcoming: 'bg-blue-50 border-blue-200 text-blue-700',
+      rescheduled: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      emergency: 'bg-rose-50 border-rose-200 text-rose-700',
       notified: 'bg-cyan-50 border-cyan-200 text-cyan-700',
       accepted: 'bg-indigo-50 border-indigo-200 text-indigo-700',
     };
@@ -109,49 +185,6 @@ export default function UserDashboard({
 
         {/* ===== LEFT SIDEBAR ===== */}
         <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-green-50 shadow-sm space-y-6">
-          {/* User Profile Card */}
-          <div className="flex items-center gap-3 border-b border-green-50 pb-5">
-            <img
-              src={currentUser.avatarUrl || 'https://api.dicebear.com/7.x/adventurer/svg'}
-              alt={currentUser.name}
-              className="w-12 h-12 rounded-full border-2 border-green-200 shadow-sm"
-              referrerPolicy="no-referrer"
-            />
-            <div className="text-left">
-              <h4 className="font-display font-bold text-gray-900 line-clamp-1">{currentUser.name}</h4>
-              <span className="text-[10px] uppercase font-bold text-[#58B368] bg-green-100/40 py-0.5 px-2 rounded-md">
-                Pet Parent
-              </span>
-            </div>
-          </div>
-
-
-          {/* Navigation Buttons */}
-          <div className="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0">
-            {sidebarOpts.map((opt) => {
-              const IconComp = opt.icon;
-              const isActive = activeSubTab === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setActiveSubTab(opt.id as any)}
-                  className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? 'bg-green-50 text-[#58B368] shadow-inner'
-                      : 'text-gray-600 hover:text-[#58B368] hover:bg-green-50/20'
-                  }`}
-                >
-                  <IconComp className={`w-4 h-4 ${isActive ? 'text-[#58B368]' : 'text-gray-400'}`} />
-                  <span className="flex-grow text-left">{opt.label}</span>
-                  {opt.count !== undefined && opt.count > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      isActive ? 'bg-[#58B368] text-white' : 'bg-slate-100 text-gray-500'
-                    }`}>{opt.count}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
 
           {/* Quick action */}
           <div className="bg-gradient-to-br from-green-50 to-emerald-50/30 p-4 rounded-2xl border border-green-100/50 text-left">
@@ -181,7 +214,7 @@ export default function UserDashboard({
               </div>
 
               {/* Bento Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
                 <div
                   onClick={() => setActiveSubTab('pets')}
                   className="bg-[#F4FBF3] border border-green-100/60 p-5 rounded-2xl space-y-2 cursor-pointer hover:border-[#58B368] transition-colors shadow-sm group"
@@ -189,7 +222,7 @@ export default function UserDashboard({
                   <span className="text-2xl">🐶</span>
                   <div className="leading-tight">
                     <span className="block text-2xl font-black text-gray-800 font-display group-hover:text-[#58B368] transition-colors">
-                      {currentUser.pets?.length || 0}
+                      {analyticsLoading ? '...' : userAnalytics?.registeredPets ?? currentUser.pets?.length ?? 0}
                     </span>
                     <span className="text-xs text-gray-400 font-semibold uppercase">Registered Pets</span>
                   </div>
@@ -202,9 +235,9 @@ export default function UserDashboard({
                   <span className="text-2xl">🗓️</span>
                   <div className="leading-tight">
                     <span className="block text-2xl font-black text-gray-800 font-display group-hover:text-green-600 transition-colors">
-                      {userBookings.length}
+                      {analyticsLoading ? '...' : userAnalytics?.completedVisits ?? userBookings.length}
                     </span>
-                    <span className="text-xs text-gray-400 font-semibold uppercase">Total Appointments</span>
+                    <span className="text-xs text-gray-400 font-semibold uppercase">Completed Visits</span>
                   </div>
                 </div>
 
@@ -215,9 +248,102 @@ export default function UserDashboard({
                   <span className="text-2xl">🚨</span>
                   <div className="leading-tight">
                     <span className="block text-2xl font-black text-gray-800 font-display group-hover:text-emerald-600 transition-colors">
-                      {userEmergencies.length}
+                      {analyticsLoading ? '...' : userAnalytics?.emergencyRequests ?? userEmergencies.length}
                     </span>
-                    <span className="text-xs text-gray-400 font-semibold uppercase">Distress Requests</span>
+                    <span className="text-xs text-gray-400 font-semibold uppercase">Emergency Requests</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100/70 p-5 rounded-2xl space-y-2 shadow-sm group">
+                  <span className="text-2xl">💉</span>
+                  <div className="leading-tight">
+                    <span className="block text-2xl font-black text-gray-800 font-display group-hover:text-slate-700 transition-colors">
+                      {analyticsLoading ? '...' : userAnalytics?.vaccinationsDue ?? 0}
+                    </span>
+                    <span className="text-xs text-gray-400 font-semibold uppercase">Vaccinations Due</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upcoming Appointment</p>
+                  <p className="mt-2 text-sm font-bold text-slate-800">{analyticsLoading ? 'Loading live data…' : userAnalytics?.upcomingAppointment || 'No upcoming appointment'}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Medical History Entries</p>
+                  <p className="mt-2 text-2xl font-black text-slate-900">{analyticsLoading ? '...' : userAnalytics?.medicalHistoryEntries ?? currentUser.pets?.reduce((sum, pet) => sum + (pet.medicalHistory?.length || 0), 0) ?? 0}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Favorite Veterinarians</p>
+                  <p className="mt-2 text-2xl font-black text-slate-900">{analyticsLoading ? '...' : userAnalytics?.favouriteVeterinarians ?? favoriteClinics.length}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                <div className="rounded-3xl border border-green-100/50 bg-white p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="font-display font-black text-slate-900">Appointment History</h4>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live SQL</span>
+                  </div>
+                  <div className="flex h-36 items-end gap-3">
+                    {(appointmentHistory.length ? appointmentHistory : userBookings.map((booking, index) => ({ label: `B${index + 1}`, value: 1 }))).slice(0, 8).map((point, index) => (
+                      <div key={`${point.label}-${index}`} className="flex-1 rounded-t-xl bg-green-500/70" style={{ height: `${Math.max(12, Math.min(100, point.value * 10))}%` }} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-green-100/50 bg-white p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="font-display font-black text-slate-900">Vaccination Timeline</h4>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pet histories</span>
+                  </div>
+                  <div className="space-y-3">
+                    {(vaccinationTimeline.length ? vaccinationTimeline : [{ label: 'Tracked', value: 0 }]).map((point, index) => (
+                      <div key={`${point.label}-${index}`} className="flex items-center gap-3">
+                        <span className="w-20 text-xs font-black text-slate-500 truncate">{point.label}</span>
+                        <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, point.value * 14)}%` }} />
+                        </div>
+                        <span className="w-8 text-xs font-black text-slate-700 text-right">{point.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-green-100/50 bg-white p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="font-display font-black text-slate-900">Weight Progress</h4>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current snapshot</span>
+                  </div>
+                  <div className="space-y-3">
+                    {(weightProgress.length ? weightProgress : (currentUser.pets || []).map((pet) => ({ label: pet.name, value: Number.parseFloat(String(pet.weight || '0').replace(/[^0-9.]/g, '')) || 0 }))).slice(0, 6).map((point, index) => (
+                      <div key={`${point.label}-${index}`} className="flex items-center gap-3">
+                        <span className="w-20 text-xs font-black text-slate-500 truncate">{point.label}</span>
+                        <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-slate-900" style={{ width: `${Math.min(100, point.value * 4)}%` }} />
+                        </div>
+                        <span className="w-10 text-xs font-black text-slate-700 text-right">{point.value.toFixed(1)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-green-100/50 bg-white p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="font-display font-black text-slate-900">Medical Expenses</h4>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">If available</span>
+                  </div>
+                  <div className="space-y-3">
+                    {(medicalExpenses.length ? medicalExpenses : [{ label: 'Estimated', value: userAnalytics?.medicalExpenses ?? 0 }]).map((point, index) => (
+                      <div key={`${point.label}-${index}`} className="flex items-center gap-3">
+                        <span className="w-20 text-xs font-black text-slate-500 truncate">{point.label}</span>
+                        <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.min(100, point.value / 20)}%` }} />
+                        </div>
+                        <span className="w-20 text-xs font-black text-slate-700 text-right">₹{Math.round(point.value).toLocaleString('en-IN')}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

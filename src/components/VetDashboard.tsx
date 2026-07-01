@@ -35,6 +35,35 @@ interface VetDashboardProps {
   onUpdateEmergencyStatus: (id: string, status: string, clinicId: string, clinicName: string) => Promise<void>;
 }
 
+interface SeriesPoint {
+  label: string;
+  value: number;
+}
+
+interface VetAnalyticsData {
+  summary: {
+    todaysAppointments: number;
+    upcomingAppointments: number;
+    completedAppointments: number;
+    emergencyCases: number;
+    patientCount: number;
+    averageRating: number;
+    reviews: number;
+    monthlyEarnings: number;
+    responseTime: number;
+    successRate: number;
+    notifications: number;
+  };
+  charts: {
+    appointmentsPerWeek: SeriesPoint[];
+    monthlyPatients: SeriesPoint[];
+    ratingsTrend: SeriesPoint[];
+    appointmentStatus: SeriesPoint[];
+    patientCategories: SeriesPoint[];
+  };
+  recentReviews: Array<{ userName: string; rating: number; reviewText: string; date: string; petType: string }>;
+}
+
 type VetTab =
   | 'overview'
   | 'appointments'
@@ -91,9 +120,12 @@ const statusCopy: Record<VerificationState, { label: string; tone: string; messa
 function statusBadge(status: string) {
   const styles: Record<string, string> = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    upcoming: 'bg-blue-50 text-blue-700 border-blue-200',
     approved: 'bg-green-50 text-green-700 border-green-200',
     completed: 'bg-green-50 text-green-700 border-green-200',
     cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
+    rescheduled: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    emergency: 'bg-rose-50 text-rose-700 border-rose-200',
     accepted: 'bg-blue-50 text-blue-700 border-blue-200',
     notified: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   };
@@ -170,6 +202,8 @@ export default function VetDashboard({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [appointmentFilter, setAppointmentFilter] = useState<'all' | Booking['status']>('all');
   const [clinicReviews, setClinicReviews] = useState<ClinicReview[]>([]);
+  const [analytics, setAnalytics] = useState<VetAnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   const clinic = useMemo(
     () => clinics.find((candidate) => candidate.id === currentUser.clinicId),
@@ -238,6 +272,53 @@ export default function VetDashboard({
     fetchClinicReviews();
   }, [clinic?.id]);
 
+  useEffect(() => {
+    if (!clinic) return;
+
+    let mounted = true;
+
+    const loadAnalytics = async () => {
+      try {
+        const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+        const token = localStorage.getItem('vetfinder_token');
+        const res = await fetch(`${apiBase}/api/analytics/vet`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (!res.ok) {
+          if (mounted) setAnalytics(null);
+          return;
+        }
+
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          if (mounted) setAnalytics(null);
+          return;
+        }
+
+        const data = await res.json();
+        if (mounted) setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to load veterinarian analytics:', err);
+        if (mounted) setAnalytics(null);
+      } finally {
+        if (mounted) setAnalyticsLoading(false);
+      }
+    };
+
+    loadAnalytics();
+    return () => {
+      mounted = false;
+    };
+  }, [clinic?.id]);
+
+  const analyticsSummary = analytics?.summary;
+  const appointmentsPerWeek = analytics?.charts.appointmentsPerWeek ?? trendBars.map((value, index) => ({ label: `W${index + 1}`, value }));
+  const monthlyPatients = analytics?.charts.monthlyPatients ?? patientBars.map((value, index) => ({ label: `M${index + 1}`, value }));
+  const ratingsTrend = analytics?.charts.ratingsTrend ?? ratingBars.map((value, index) => ({ label: `M${index + 1}`, value }));
+  const appointmentStatus = analytics?.charts.appointmentStatus ?? [];
+  const patientCategories = analytics?.charts.patientCategories ?? [];
+
   const updateBooking = async (id: string, status: 'approved' | 'completed' | 'cancelled') => {
     setLoadingId(id);
     try {
@@ -259,13 +340,13 @@ export default function VetDashboard({
 
   const tabs = [
     { id: 'overview', label: 'Home', icon: BarChart3 },
-    { id: 'appointments', label: 'Appointments', icon: CalendarCheck, count: pendingBookings.length },
-    { id: 'emergencies', label: 'Emergencies', icon: ShieldAlert, count: activeEmergencies.filter((emergency) => emergency.status === 'pending' || emergency.status === 'notified').length },
+    { id: 'appointments', label: 'Appointments', icon: CalendarCheck, count: analyticsSummary?.upcomingAppointments ?? pendingBookings.length },
+    { id: 'emergencies', label: 'Emergencies', icon: ShieldAlert, count: analyticsSummary?.emergencyCases ?? activeEmergencies.filter((emergency) => emergency.status === 'pending' || emergency.status === 'notified').length },
     { id: 'records', label: 'Patient Records', icon: ClipboardList },
-    { id: 'reviews', label: 'Reviews', icon: Star, count: clinicReviews.length },
+    { id: 'reviews', label: 'Reviews', icon: Star, count: analyticsSummary?.reviews ?? clinicReviews.length },
     { id: 'schedule', label: 'Schedule', icon: CalendarClock },
     { id: 'profile', label: 'Profile', icon: UserRound },
-    { id: 'messages', label: 'Messages', icon: MessageSquare, count: Math.min(4, pendingBookings.length + ownedEmergencies.length) },
+    { id: 'messages', label: 'Messages', icon: MessageSquare, count: analyticsSummary?.notifications ?? Math.min(4, pendingBookings.length + ownedEmergencies.length) },
     { id: 'prescriptions', label: 'Prescriptions', icon: Pill },
     { id: 'analytics', label: 'Analytics', icon: Activity },
     { id: 'credentials', label: 'Credentials', icon: ShieldCheck },
@@ -372,22 +453,22 @@ export default function VetDashboard({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                  <MetricTile icon={CalendarCheck} label="Today" value={todaysAppointments.length} hint="Appointments booked for the current date" />
-                  <MetricTile icon={Clock} label="Upcoming" value={clinicBookings.filter((booking) => booking.status === 'approved').length} hint="Approved consultations waiting to be completed" />
-                  <MetricTile icon={ShieldAlert} label="Emergencies" value={activeEmergencies.length} hint="Open regional emergency requests" />
-                  <MetricTile icon={Star} label="Rating" value={`${clinic.rating.toFixed(1)}`} hint={`${clinic.reviewsCount || clinicReviews.length} public reviews tracked`} />
-                  <MetricTile icon={UsersRound} label="Patients" value={patientRecords.length} hint="Unique completed patient records" />
-                  <MetricTile icon={MessageSquare} label="Messages" value={Math.min(4, pendingBookings.length + ownedEmergencies.length)} hint="Appointment and follow-up conversations" />
-                  <MetricTile icon={Pill} label="Prescriptions" value={completedBookings.length} hint="Draftable notes from completed consultations" />
-                  <MetricTile icon={Bell} label="Notifications" value={pendingBookings.length + newReviews.length} hint="New requests, reviews, and verification reminders" />
+                  <MetricTile icon={CalendarCheck} label="Today" value={analyticsSummary?.todaysAppointments ?? todaysAppointments.length} hint="Appointments booked for the current date" />
+                  <MetricTile icon={Clock} label="Upcoming" value={analyticsSummary?.upcomingAppointments ?? clinicBookings.filter((booking) => booking.status === 'approved' || booking.status === 'upcoming' || booking.status === 'rescheduled').length} hint="Upcoming consultations waiting to be completed" />
+                  <MetricTile icon={ShieldAlert} label="Emergencies" value={analyticsSummary?.emergencyCases ?? activeEmergencies.length} hint="Open regional emergency requests" />
+                  <MetricTile icon={Star} label="Rating" value={`${(analyticsSummary?.averageRating ?? clinic.rating).toFixed(1)}`} hint={`${analyticsSummary?.reviews ?? clinic.reviewsCount ?? clinicReviews.length} public reviews tracked`} />
+                  <MetricTile icon={UsersRound} label="Patients" value={analyticsSummary?.patientCount ?? patientRecords.length} hint="Unique completed patient records" />
+                  <MetricTile icon={MessageSquare} label="Messages" value={analyticsSummary?.notifications ?? Math.min(4, pendingBookings.length + ownedEmergencies.length)} hint="Appointment and follow-up conversations" />
+                  <MetricTile icon={Pill} label="Earnings" value={`₹${Math.round(analyticsSummary?.monthlyEarnings ?? completedBookings.length * 850).toLocaleString('en-IN')}`} hint="Estimated monthly earnings from treatments" />
+                  <MetricTile icon={Bell} label="Success" value={`${Math.round(analyticsSummary?.successRate ?? (clinicBookings.length ? ((clinicBookings.length - clinicBookings.filter((booking) => booking.status === 'cancelled').length) / clinicBookings.length) * 100 : 100))}%`} hint="Requests not declined" />
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
                     <h4 className="font-display font-black text-slate-900">Weekly appointment trends</h4>
                     <div className="mt-5 flex h-40 items-end gap-3">
-                      {trendBars.map((height, index) => (
-                        <div key={height} className="flex-1 rounded-t-xl bg-green-500/80" style={{ height: `${height}%` }} title={`Day ${index + 1}`} />
+                      {appointmentsPerWeek.map((point, index) => (
+                        <div key={`${point.label}-${index}`} className="flex-1 rounded-t-xl bg-green-500/80" style={{ height: `${Math.max(12, Math.min(100, point.value * 8))}%` }} title={point.label} />
                       ))}
                     </div>
                   </div>
@@ -706,29 +787,59 @@ export default function VetDashboard({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                   <MetricTile icon={Stethoscope} label="Consultations" value={clinicBookings.length} hint="Total booked clinic and home visits" />
-                  <MetricTile icon={HeartPulse} label="Emergencies" value={ownedEmergencies.length} hint="Emergency cases accepted by this clinic" />
-                  <MetricTile icon={Check} label="Acceptance" value={`${clinicBookings.length ? Math.round(((clinicBookings.length - clinicBookings.filter((booking) => booking.status === 'cancelled').length) / clinicBookings.length) * 100) : 100}%`} hint="Requests not declined" />
-                  <MetricTile icon={X} label="Cancellation" value={`${clinicBookings.length ? Math.round((clinicBookings.filter((booking) => booking.status === 'cancelled').length / clinicBookings.length) * 100) : 0}%`} hint="Cancelled appointment share" />
+                  <MetricTile icon={HeartPulse} label="Emergencies" value={analyticsSummary?.emergencyCases ?? ownedEmergencies.length} hint="Emergency cases accepted by this clinic" />
+                  <MetricTile icon={Check} label="Acceptance" value={`${analyticsSummary?.successRate ?? (clinicBookings.length ? Math.round(((clinicBookings.length - clinicBookings.filter((booking) => booking.status === 'cancelled').length) / clinicBookings.length) * 100) : 100)}%`} hint="Requests not declined" />
+                  <MetricTile icon={X} label="Response" value={`${Math.round(analyticsSummary?.responseTime ?? 0)}h`} hint="Average booking lead time" />
                 </div>
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
                     <h4 className="font-display font-black text-slate-900">Monthly patient statistics</h4>
                     <div className="mt-5 flex h-40 items-end gap-3">
-                      {patientBars.map((height) => (
-                        <div key={height} className="flex-1 rounded-t-xl bg-slate-900" style={{ height: `${height}%` }} />
+                      {monthlyPatients.map((point, index) => (
+                        <div key={`${point.label}-${index}`} className="flex-1 rounded-t-xl bg-slate-900" style={{ height: `${Math.max(12, Math.min(100, point.value * 8))}%` }} />
                       ))}
                     </div>
                   </div>
                   <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
                     <h4 className="font-display font-black text-slate-900">Rating trend</h4>
                     <div className="mt-5 space-y-3">
-                      {ratingBars.map((rating, index) => (
-                        <div key={`${rating}-${index}`} className="flex items-center gap-3">
-                          <span className="w-10 text-xs font-black text-slate-500">M{index + 1}</span>
+                      {ratingsTrend.map((rating, index) => (
+                        <div key={`${rating.label}-${index}`} className="flex items-center gap-3">
+                          <span className="w-10 text-xs font-black text-slate-500">{rating.label}</span>
                           <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                            <div className="h-full rounded-full bg-amber-400" style={{ width: `${rating * 20}%` }} />
+                            <div className="h-full rounded-full bg-amber-400" style={{ width: `${Math.min(100, rating.value * 20)}%` }} />
                           </div>
-                          <span className="w-8 text-xs font-black text-slate-700">{rating.toFixed(1)}</span>
+                          <span className="w-8 text-xs font-black text-slate-700">{rating.value.toFixed(1)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                    <h4 className="font-display font-black text-slate-900">Appointment Status</h4>
+                    <div className="mt-5 space-y-3">
+                      {(appointmentStatus.length ? appointmentStatus : clinicBookings.map((booking) => ({ label: booking.status, value: 1 }))).slice(0, 6).map((item, index) => (
+                        <div key={`${item.label}-${index}`} className="flex items-center gap-3">
+                          <span className="w-24 text-xs font-black text-slate-500 capitalize truncate">{item.label}</span>
+                          <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-green-500" style={{ width: `${Math.min(100, item.value * 14)}%` }} />
+                          </div>
+                          <span className="w-8 text-xs font-black text-slate-700">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-3xl border border-green-100/70 shadow-sm p-6">
+                    <h4 className="font-display font-black text-slate-900">Patient Categories</h4>
+                    <div className="mt-5 space-y-3">
+                      {(patientCategories.length ? patientCategories : clinicBookings.map((booking) => ({ label: booking.petType, value: 1 }))).slice(0, 6).map((item, index) => (
+                        <div key={`${item.label}-${index}`} className="flex items-center gap-3">
+                          <span className="w-24 text-xs font-black text-slate-500 capitalize truncate">{item.label}</span>
+                          <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, item.value * 14)}%` }} />
+                          </div>
+                          <span className="w-8 text-xs font-black text-slate-700">{item.value}</span>
                         </div>
                       ))}
                     </div>

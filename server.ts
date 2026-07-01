@@ -11,6 +11,7 @@ import {
 } from './src/server/schema.js';
 import { signToken } from './src/server/jwt.js';
 import { authenticateToken, requireRole } from './src/server/middleware.js';
+import { getAdminAnalytics, getUserAnalytics, getVetAnalytics } from './src/server/analytics.js';
 
 const app = express();
 const PORT = 3000;
@@ -629,6 +630,39 @@ app.get('/api/user/me', authenticateToken, async (req: any, res: any) => {
   } catch (err: any) {
     console.error('Get user error:', err);
     res.status(500).json({ error: 'Failed to fetch user.' });
+  }
+});
+
+// ANALYTICS: Admin dashboard
+app.get('/api/analytics/admin', authenticateToken, requireRole('admin'), async (_req: any, res: any) => {
+  try {
+    res.json(await getAdminAnalytics());
+  } catch (err: any) {
+    console.error('Admin analytics error:', err);
+    res.status(500).json({ error: 'Failed to fetch admin analytics.' });
+  }
+});
+
+// ANALYTICS: Veterinarian dashboard
+app.get('/api/analytics/vet', authenticateToken, requireRole('veterinarian'), async (req: any, res: any) => {
+  try {
+    if (!req.user.clinicId) {
+      return res.status(400).json({ error: 'Veterinarian profile is not linked to a clinic yet.' });
+    }
+    res.json(await getVetAnalytics(req.user.clinicId));
+  } catch (err: any) {
+    console.error('Vet analytics error:', err);
+    res.status(500).json({ error: 'Failed to fetch veterinarian analytics.' });
+  }
+});
+
+// ANALYTICS: Pet owner dashboard
+app.get('/api/analytics/user', authenticateToken, requireRole('pet_owner'), async (req: any, res: any) => {
+  try {
+    res.json(await getUserAnalytics(req.user.id));
+  } catch (err: any) {
+    console.error('User analytics error:', err);
+    res.status(500).json({ error: 'Failed to fetch user analytics.' });
   }
 });
 

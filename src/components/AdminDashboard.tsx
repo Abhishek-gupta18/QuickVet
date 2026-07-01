@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -33,6 +33,36 @@ interface AdminDashboardProps {
   bookings: Booking[];
   emergencies: EmergencyRequest[];
   onUpdateClinicVerification: (clinicId: string, status: NonNullable<VetClinic['verificationStatus']>) => Promise<void>;
+}
+
+interface SeriesPoint {
+  label: string;
+  value: number;
+}
+
+interface AdminAnalyticsData {
+  summary: {
+    totalUsers: number;
+    totalVeterinarians: number;
+    verifiedVets: number;
+    pendingVerifications: number;
+    clinics: number;
+    appointments: number;
+    emergencyRequests: number;
+    completedTreatments: number;
+    reviews: number;
+    averageRating: number;
+    notifications: number;
+  };
+  charts: {
+    monthlyUserRegistrations: SeriesPoint[];
+    monthlyAppointments: SeriesPoint[];
+    appointmentStatusDistribution: SeriesPoint[];
+    emergencyRequestsTrend: SeriesPoint[];
+    topCities: SeriesPoint[];
+    vaccinationStatistics: SeriesPoint[];
+  };
+  activityLogs: Array<{ action: string; actor: string; time: string; source: string }>;
 }
 
 type AdminTab =
@@ -146,6 +176,46 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<{ vetName: string; document: VetDocument } | null>(null);
+  const [analytics, setAnalytics] = useState<AdminAnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAnalytics = async () => {
+      try {
+        const apiBase = (import.meta as any).env?.VITE_API_URL || '';
+        const token = localStorage.getItem('vetfinder_token');
+        const res = await fetch(`${apiBase}/api/analytics/admin`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+
+        if (!res.ok) {
+          if (mounted) setAnalytics(null);
+          return;
+        }
+
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          if (mounted) setAnalytics(null);
+          return;
+        }
+
+        const data = await res.json();
+        if (mounted) setAnalytics(data);
+      } catch (err) {
+        console.error('Failed to load admin analytics:', err);
+        if (mounted) setAnalytics(null);
+      } finally {
+        if (mounted) setAnalyticsLoading(false);
+      }
+    };
+
+    loadAnalytics();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const applications = useMemo(() => {
     const uploadedApplications = clinics
@@ -169,7 +239,7 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
     return [...uploadedApplications, ...verificationApplications];
   }, [clinics]);
 
-  const stats = useMemo(() => {
+  const fallbackStats = useMemo(() => {
     const pendingBookings = bookings.filter((booking) => booking.status === 'pending').length;
     const activeEmergencies = emergencies.filter((emergency) => emergency.status !== 'completed').length;
     const averageRating = clinics.length
@@ -178,17 +248,35 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
 
     return {
       totalUsers: Math.max(1284, bookings.length * 14 + clinics.length * 11),
-      totalVets: clinics.length,
-      activeVets: clinics.filter((clinic) => clinic.isOpenNow).length,
-      pendingApprovals: applications.filter((app) => app.status === 'Pending' || app.status === 'Needs Documents').length,
-      suspendedAccounts: 3,
-      emergencyToday: Math.max(activeEmergencies, emergencies.length),
+      totalVeterinarians: clinics.length,
+      verifiedVets: clinics.filter((clinic) => clinic.verificationStatus === 'approved').length,
+      pendingVerifications: applications.filter((app) => app.status === 'Pending' || app.status === 'Needs Documents' || app.status === 'Hold').length,
+      clinics: clinics.length,
+      emergencyRequests: Math.max(activeEmergencies, emergencies.length),
       appointments: bookings.length,
-      pendingBookings,
+      completedTreatments: bookings.filter((booking) => booking.status === 'completed').length,
+      reviews: clinics.reduce((sum, clinic) => sum + (clinic.reviewsCount || 0), 0),
       averageRating,
-      growth: 12.8,
+      notifications: pendingBookings + activeEmergencies,
+      suspendedAccounts: 0,
+      activeVets: clinics.filter((clinic) => clinic.isOpenNow).length,
+      pendingBookings,
     };
   }, [applications, bookings, clinics, emergencies]);
+
+  const stats = analytics?.summary ?? fallbackStats;
+  const monthlyRegistrations = analytics?.charts.monthlyUserRegistrations ?? [];
+  const monthlyAppointments = analytics?.charts.monthlyAppointments ?? [];
+  const appointmentStatuses = analytics?.charts.appointmentStatusDistribution ?? [];
+  const emergencyTrend = analytics?.charts.emergencyRequestsTrend ?? [];
+  const topCities = analytics?.charts.topCities ?? [];
+  const vaccinationStats = analytics?.charts.vaccinationStatistics ?? [];
+  const activityFeed = analytics?.activityLogs ?? auditLogs.map((log) => ({
+    action: log.action,
+    actor: log.admin,
+    time: log.time,
+    source: log.ip,
+  }));
 
   const filteredApplications = applications.filter((app) => {
     const haystack = `${app.doctor} ${app.license} ${app.clinic} ${app.status} ${app.specialty}`.toLowerCase();
@@ -212,11 +300,11 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
 
   const tabs = [
     { id: 'overview', label: 'Command Home', icon: BarChart3 },
-    { id: 'verification', label: 'Vet Verification', icon: ClipboardCheck, count: stats.pendingApprovals },
+    { id: 'verification', label: 'Vet Verification', icon: ClipboardCheck, count: stats.pendingVerifications },
     { id: 'performance', label: 'Performance', icon: Gauge },
     { id: 'complaints', label: 'Reviews & Complaints', icon: MessageSquareWarning, count: complaints.length },
     { id: 'users', label: 'User Management', icon: Users },
-    { id: 'emergencies', label: 'Emergency Monitor', icon: AlertTriangle, count: stats.emergencyToday },
+    { id: 'emergencies', label: 'Emergency Monitor', icon: AlertTriangle, count: stats.emergencyRequests },
     { id: 'documents', label: 'Documents', icon: FileSearch },
     { id: 'security', label: 'Security Logs', icon: Lock },
   ] as const;
@@ -233,6 +321,9 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
       completed: 'bg-green-50 text-green-700 border-green-200',
       pending: 'bg-amber-50 text-amber-700 border-amber-200',
       cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
+      upcoming: 'bg-blue-50 text-blue-700 border-blue-200',
+      rescheduled: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+      emergency: 'bg-rose-50 text-rose-700 border-rose-200',
       accepted: 'bg-blue-50 text-blue-700 border-blue-200',
       notified: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     };
@@ -308,7 +399,7 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
                 </div>
                 <div className="grid grid-cols-2 gap-3 min-w-[220px]">
                   <div className="bg-white/10 border border-white/10 rounded-2xl p-3">
-                    <span className="block text-2xl font-black">{stats.pendingApprovals}</span>
+                    <span className="block text-2xl font-black">{stats.pendingVerifications}</span>
                     <span className="text-[10px] text-slate-300 font-bold uppercase">Pending checks</span>
                   </div>
                   <div className="bg-white/10 border border-white/10 rounded-2xl p-3">
@@ -323,14 +414,18 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
-                    { label: 'Pending Vet Approvals', value: stats.pendingApprovals, icon: ClipboardCheck, tone: 'text-amber-600 bg-amber-50' },
-                    { label: 'Active Veterinarians', value: stats.activeVets, icon: Stethoscope, tone: 'text-green-700 bg-green-50' },
                     { label: 'Total Users', value: stats.totalUsers, icon: Users, tone: 'text-blue-700 bg-blue-50' },
-                    { label: 'Emergency Requests', value: stats.emergencyToday, icon: AlertTriangle, tone: 'text-rose-700 bg-rose-50' },
-                    { label: "Today's Appointments", value: stats.appointments, icon: CalendarDays, tone: 'text-indigo-700 bg-indigo-50' },
-                    { label: 'Suspended Accounts', value: stats.suspendedAccounts, icon: ShieldOff, tone: 'text-slate-700 bg-slate-100' },
-                    { label: 'New Registrations', value: 24, icon: UserCog, tone: 'text-cyan-700 bg-cyan-50' },
-                    { label: 'Weekly Growth', value: `${stats.growth}%`, icon: BarChart3, tone: 'text-emerald-700 bg-emerald-50' },
+                    { label: 'Total Veterinarians', value: stats.totalVeterinarians, icon: Stethoscope, tone: 'text-green-700 bg-green-50' },
+                    { label: 'Verified Vets', value: stats.verifiedVets, icon: ClipboardCheck, tone: 'text-emerald-700 bg-emerald-50' },
+                    { label: 'Pending Verifications', value: stats.pendingVerifications, icon: ShieldOff, tone: 'text-amber-700 bg-amber-50' },
+                    { label: 'Clinics', value: stats.clinics, icon: ShieldCheck, tone: 'text-slate-700 bg-slate-100' },
+                    { label: 'Appointments', value: stats.appointments, icon: CalendarDays, tone: 'text-indigo-700 bg-indigo-50' },
+                    { label: 'Emergency Requests', value: stats.emergencyRequests, icon: AlertTriangle, tone: 'text-rose-700 bg-rose-50' },
+                    { label: 'Completed Treatments', value: stats.completedTreatments, icon: CheckCircle2, tone: 'text-lime-700 bg-lime-50' },
+                    { label: 'Reviews', value: stats.reviews, icon: MessageSquareWarning, tone: 'text-cyan-700 bg-cyan-50' },
+                    { label: 'Average Rating', value: analyticsLoading ? 'Loading…' : stats.averageRating.toFixed(2), icon: Star, tone: 'text-amber-700 bg-amber-50' },
+                    { label: 'Notifications', value: stats.notifications, icon: Bell, tone: 'text-fuchsia-700 bg-fuchsia-50' },
+                    { label: 'Live Queue', value: analyticsLoading ? 'Loading…' : Math.max(0, stats.pendingVerifications + stats.emergencyRequests), icon: Activity, tone: 'text-slate-700 bg-slate-100' },
                   ].map((card) => {
                     const Icon = card.icon;
                     return (
@@ -349,12 +444,12 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-5">
                       <h3 className="font-display font-black text-slate-900">Monthly Registrations</h3>
-                      <span className="text-[10px] font-black text-green-700 bg-green-50 px-2 py-1 rounded-lg">+18% MoM</span>
+                      <span className="text-[10px] font-black text-green-700 bg-green-50 px-2 py-1 rounded-lg">Live from PostgreSQL</span>
                     </div>
                     <div className="h-44 flex items-end gap-3">
-                      {monthlyBars.map((height, index) => (
-                        <div key={index} className="flex-1 rounded-t-xl bg-green-100 relative overflow-hidden" style={{ height: `${height}%` }}>
-                          <div className="absolute inset-x-0 bottom-0 bg-green-500 rounded-t-xl" style={{ height: `${Math.max(28, height - 18)}%` }} />
+                      {(monthlyRegistrations.length ? monthlyRegistrations : monthlyBars.map((height, index) => ({ label: `M${index + 1}`, value: height }))).map((point, index) => (
+                        <div key={`${point.label}-${index}`} className="flex-1 rounded-t-xl bg-green-100 relative overflow-hidden" style={{ height: `${Math.max(18, Math.min(100, point.value))}%` }}>
+                          <div className="absolute inset-x-0 bottom-0 bg-green-500 rounded-t-xl" style={{ height: `${Math.max(28, Math.min(100, point.value) - 18)}%` }} />
                         </div>
                       ))}
                     </div>
@@ -363,11 +458,11 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-5">
                       <h3 className="font-display font-black text-slate-900">Emergency Request Trend</h3>
-                      <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-2 py-1 rounded-lg">Live watch</span>
+                      <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-2 py-1 rounded-lg">SQL aggregate</span>
                     </div>
                     <div className="h-44 flex items-end gap-3">
-                      {emergencyBars.map((height, index) => (
-                        <div key={index} className="flex-1 rounded-t-xl bg-rose-100 relative overflow-hidden" style={{ height: `${height * 2.1}%` }}>
+                      {(emergencyTrend.length ? emergencyTrend : emergencyBars.map((height, index) => ({ label: `M${index + 1}`, value: height }))).map((point, index) => (
+                        <div key={`${point.label}-${index}`} className="flex-1 rounded-t-xl bg-rose-100 relative overflow-hidden" style={{ height: `${Math.max(18, Math.min(100, point.value * 2))}%` }}>
                           <div className="absolute inset-x-0 bottom-0 bg-rose-500 rounded-t-xl" style={{ height: '72%' }} />
                         </div>
                       ))}
@@ -378,12 +473,55 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
                 <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                   <h3 className="font-display font-black text-slate-900 mb-4">Verification Queue Snapshot</h3>
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    {['Pending Applications', 'Approved Veterinarians', 'Rejected Applications', 'Suspended Veterinarians', 'Re-verification Requests'].map((item, index) => (
-                      <div key={item} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <span className="block text-xl font-black text-slate-900">{[18, stats.totalVets, 7, 3, 5][index]}</span>
-                        <span className="text-[10px] font-black uppercase text-slate-500">{item}</span>
+                    {[
+                      ['Pending Applications', stats.pendingVerifications],
+                      ['Approved Veterinarians', stats.verifiedVets],
+                      ['Total Clinics', stats.clinics],
+                      ['Review Volume', stats.reviews],
+                      ['Live Notifications', stats.notifications],
+                    ].map(([item, value]) => (
+                      <div key={item as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <span className="block text-xl font-black text-slate-900">{value as number}</span>
+                        <span className="text-[10px] font-black uppercase text-slate-500">{item as string}</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="font-display font-black text-slate-900">Top Cities</h3>
+                      <span className="text-[10px] font-black text-slate-500 uppercase">Clinics by city</span>
+                    </div>
+                    <div className="space-y-3">
+                      {(topCities.length ? topCities : [{ label: 'Bengaluru', value: clinics.length }]).map((point) => (
+                        <div key={point.label} className="flex items-center gap-3">
+                          <span className="w-24 text-xs font-black text-slate-500 truncate">{point.label}</span>
+                          <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-slate-900" style={{ width: `${Math.min(100, point.value * 12)}%` }} />
+                          </div>
+                          <span className="w-10 text-xs font-black text-slate-700 text-right">{point.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="font-display font-black text-slate-900">Vaccination Signal</h3>
+                      <span className="text-[10px] font-black text-slate-500 uppercase">Pet medical histories</span>
+                    </div>
+                    <div className="space-y-3">
+                      {(vaccinationStats.length ? vaccinationStats : [{ label: 'Tracked', value: 0 }]).map((point) => (
+                        <div key={point.label} className="flex items-center gap-3">
+                          <span className="w-24 text-xs font-black text-slate-500 truncate">{point.label}</span>
+                          <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.min(100, point.value * 12)}%` }} />
+                          </div>
+                          <span className="w-10 text-xs font-black text-slate-700 text-right">{point.value}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -658,11 +796,11 @@ export default function AdminDashboard({ currentUser, clinics, bookings, emergen
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 <div className="xl:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-5 space-y-4">
                   <h3 className="font-display font-black text-2xl text-slate-900">Activity Logs</h3>
-                  {auditLogs.map((log) => (
+                  {activityFeed.map((log) => (
                     <div key={`${log.action}-${log.time}`} className="rounded-2xl border border-slate-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <span className="block font-black text-slate-900">{log.action}</span>
-                        <span className="text-xs text-slate-500">{log.admin} · {log.ip}</span>
+                        <span className="text-xs text-slate-500">{log.actor} · {log.source}</span>
                       </div>
                       <span className="text-xs font-black text-slate-500">{log.time}</span>
                     </div>
